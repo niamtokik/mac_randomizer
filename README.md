@@ -1,8 +1,26 @@
 # MAC Randomizer
 
-`mac_randomizer` is a small tool used to randomizer MAC addresses.
+`mac_randomizer` is a small tool used to randomizer MAC addresses. At
+this time of writing, this tool is planned to run only on OpenBSD.
 
 ## Usage
+
+Print the help message.
+
+```console
+$ ./mac_randomizer -h
+Usage: ./mac_randomizer -[lumghs] [-o OID] [-c COUNTRY] [-C COMPANY]
+  -h: print this message
+  -u: unicast mac address
+  -m: multicast mac address
+  -l: locally assigned mac address
+  -g: globally unique mac address
+  -s: print the store
+  -o OID: use an OID prefix
+  -c COUNTRY: use an OID from the store using a country identifier
+  -C COMPANY: use an OID from the store using a company identifier
+  -i MAC: print information about a mac address
+```
 
 Generating a pure random 48bits MAC address
 
@@ -11,7 +29,7 @@ $ ./mac_randomizer
 5c:6d:2c:73:2c:43
 ```
 
-Generating an unicast locally adminstrated MAC address:
+Generating an unicast locally administrated MAC address:
 
 ```console
 $ ./mac_randomizer -l -u
@@ -58,6 +76,24 @@ oui;country;company
 ...
 ```
 
+Printing information about a mac address:
+
+```console
+$ ./mac_randomaizer -i 28:6F:B9:5c:6d:2c
+address: 28:6F:B9:5c:6d:2c
+oui: 28:6f:b9
+unicast: true
+multicast: false
+locally administered: true
+globally unique: false
+country: CN
+company: Nokia Shanghai Bell Co., Ltd
+eli (ieee802c): false
+sai (ieee802c): false
+aai (ieee802c): false
+reserved (ieee802c): false
+```
+
 ## Build
 
 ```console
@@ -68,9 +104,96 @@ $ make
 $ make clean
 ```
 
-## OUI Store
+## Ideas
 
-## BUGS AND CAVEATS
+### Multi format MAC address support input
+
+- hexadecimal: 0x5c6d2c5c6d2c
+- column: 5c:6d:2c:5c:6d:2c
+- dash: 5c-6d-2c-5c-6d-2c
+- grouped: 5c6d.2c5c.6d2c
+- reversed with a flag(ieee802.3 and token ring):
+
+### Multi format MAC address support output
+
+see previous idea. flags to use:
+
+- `-:` (default, can be ommited)
+- `-x`
+- `-d`
+- `-.`
+
+### MAC Address Random list
+
+Generate 10 random MAC addresses:
+
+```console
+$ ./mac_randomizer -R 10
+...
+```
+
+### SHA256 support
+
+Enhanced privacy using SHA256.
+
+### Argon2 support
+
+Enhanced privacy using Argon2 PBKDF.
+
+```console
+$ ./mac_randomizer -a -S my_secret
+...
+```
+
+```console
+$ echo $mac_address | ./mac_randomizer -a -S my_secret
+...
+```
+
+### OUI and MAC Addresses Information Store
+
+`mac_randomizer` should have all standardized MAC address
+information statically compiled in it to allow anyone to
+extract those data on demand. It could take a huge amount
+of memory, then, compression can be an idea. If compressed,
+the data should be loaded in usable memory space only on
+demand. Another idea is to use a memory mapping between
+
+## FAQ
+
+### Why another tool for MAC addresses?
+
+I wanted to have a tool to manage random MAC addresses and
+privacy-enhanced MAC addresses (using a pseudo-random address based
+on HASH or PBKDF). I also wanted a fast solution to collect
+information on MAC addresses based on their OID without asking
+a remote web site.
+
+### Is it stable?
+
+Not yet.
+
+### Is it secure?
+
+It will be implemented with all OpenBSD safety like `pledge` and `unveil`
+to limit security issues. It will also avoid using dynamic memory
+allocation if possible.
+
+### Is it portable?
+
+No. At this time, it's only planned to run on OpenBSD.
+
+### What about the license?
+
+3-Clause BSD. Do whatever you want with my code.
+
+### How to compile it?
+
+You need a compiler (`gcc` or `clang`) and `gnumake`.
+
+### How to contribute?
+
+Create an issue or a PR on github.
 
 # References and Resources
 
