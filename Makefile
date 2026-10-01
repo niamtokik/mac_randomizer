@@ -1,10 +1,18 @@
 ######################################################################
 # GNU Makefile
 ######################################################################
-all: mac_randomizer
+BUILD_DIR ?= ./_build
 
-mac_randomizer:
+.PHONY += all
+all: $(BUILD_DIR)/mac_randomizer
+
+$(BUILD_DIR):
+	mkdir -p $(BUILD_DIR)
+
+$(BUILD_DIR)/mac_randomizer: $(BUILD_DIR)
 	cc -o $@ mac_randomizer.c
 
 clean:
-	rm mac_randomizer
+	rm $(BUILD_DIR)/mac_randomizer
+
+.PHONY: $(.PHONY)
