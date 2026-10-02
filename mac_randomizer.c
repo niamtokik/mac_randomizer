@@ -1,14 +1,5 @@
 /**
  *
- * https://en.wikipedia.org/wiki/MAC_address
- * https://en.wikipedia.org/wiki/MAC_address_anonymization
- * https://standards-oui.ieee.org/oui/oui.txt
- * https://standards-oui.ieee.org/oui28/mam.txt
- * https://standards-oui.ieee.org/oui36/oui36.txt
- * https://www.iana.org/assignments/ethernet-numbers
- * https://www.scitepress.org/Link.aspx?doi=10.5220/0009825105720579
- * https://www.scitepress.org/Papers/2020/98251/98251.pdf
- * https://github.com/winlibs/argon2
  */
 #include <stdio.h>
 #include <stdlib.h>
@@ -16,144 +7,99 @@
 #include <unistd.h>
 #include <string.h>
 #include <strings.h>
-#define MAC_SIZE 6
+#include "mac_randomizer.h"
 
-uint8_t mac_address[MAC_SIZE];
+/* MAC mask address */
+uint8_t mac_unicast_universal_mask[4] = {0xf0, 0xf4, 0xf8, 0xfc};
+size_t mac_unicast_universal_mask_l = 4;
 
-struct mac_info {
-  uint8_t oui[3];
-  uint8_t multicast;
-  uint8_t local;
-  uint8_t nic[3];
-};
+uint8_t mac_unicast_local_mask[4] = {0xf2, 0xf6, 0xfa, 0xfe};
+size_t mac_unicast_local_mask_l  = 4;
 
-/* draft
-typedef struct arg_s {
-  uint8_t id;
-  size_t length;
-  char * desc;
-} arg_s;
+uint8_t mac_multicast_universal_mask[4] = {0xf1, 0xf5, 0xf9, 0xfd};
+size_t mac_multicast_universal_mask_l = 4;
 
-struct command_opts_s2 {
-  arg_s name;
-  arg_s country;
-} command_opts_s2 = {
-  {'h', 0, ""},
-  {'c', 2, ""},
-  {'C', 256, ""}
-};
-*/
+uint8_t mac_multicast_local_mask[4] = {0xf3, 0xf7, 0xfb, 0xff};
+size_t mac_multicast_local_mask_l = 4;
 
-struct command_opts_s {
-  // program name
-  char name[128];
-
-  // -c: country flag
-  char country[2];
-
-  // -C: company flag
-  char company[256];
-
-  // -h: help flag
-  uint8_t help;
-
-  // -u: unicast flag
-  uint8_t unicast;
-
-  // -m: multicast flag
-  uint8_t multicast;
-
-  // -l: locally assigned flag
-  uint8_t locally_assigned;
-
-  // -g: globally unique flag
-  uint8_t globally_unique;
-
-  // -s: store export flag
-  uint8_t store_export;
-
-  // -i: info flag
-  uint8_t info;
-
-} command_opts;
-
-int init() {
-  // start with a clean command_opts structure
-  bzero(&command_opts, sizeof(command_opts));
-
+int mac_init(uint8_t *mac_address) {
   // start with a clean mac_address array
   bzero(mac_address, sizeof(uint8_t) * MAC_SIZE);
   return 0;
 }
 
-int parse_args(int argc, char *argv[]) {
-  (void)strncpy(command_opts.name, argv[0], 128);
-  uint8_t is_arg = 0;
-  char *params = NULL;
-  for (int i=1; i<argc; i++) {
-    for (int j=0; j<strnlen(argv[i], 256); j++) {
-      if (j==0) {
-        is_arg=0;
-        params = NULL;
-      }
-      switch (argv[i][j]) {
-        case '-': 
-          if (j==0) is_arg=1;
-          continue;
-        case 'h': 
-          if (j>0 && is_arg==1) command_opts.help=1;
-          continue;
-        case 'u': 
-          if (j>0 && is_arg==1) command_opts.unicast=1;
-          continue;
-        case 'm': 
-          if (j>0 && is_arg==1) command_opts.multicast=1;
-          continue;
-        case 'l':
-          if (j>0 && is_arg==1) command_opts.locally_assigned=1;
-          continue;
-        case 'g':
-          if (j>0 && is_arg==1) command_opts.globally_unique=1;
-          continue;
-        case 'c': 
-          if (j>0 && is_arg==1) {
-            params = command_opts.country;
-          };
-          continue;
-        case 'C':
-          if (j>0 && is_arg==1) {
-          params = command_opts.company;
-          }
-          continue;
-      }
-    }
-  }
-  return 0; 
-}
-
-void show_opts() {
-  printf("name: %s\n", command_opts.name);
-  printf("country: %s\n", command_opts.country);
-  printf("company: %s\n", command_opts.company);
-  printf("help: %x\n", command_opts.help);
-  printf("unicast: %x\n", command_opts.unicast);
-  printf("multicast: %x\n", command_opts.multicast);
-  printf("locally_assigned: %x\n", command_opts.locally_assigned);
-  printf("globally_unique: %x\n", command_opts.globally_unique);
-  printf("store_export: %x\n", command_opts.store_export);
-  printf("info: %x\n", command_opts.info);
-}
-
+/**
+* Gnererate a purely random mac address
+*/
 int mac_random(uint8_t *mac_address) {
   arc4random_buf(mac_address, MAC_SIZE);
   return 0;
 }
 
-int mac_unicast(uint8_t *mac_address) {
+/**
+ * Returns a random unicast universally administrated MAC
+ * address.
+ */
+int mac_unicast_universal(uint8_t *mac_address) {
+  uint8_t rand = 0;
+  arc4random_buf(&rand, sizeof(uint8_t));
+  rand = rand % mac_unicast_universal_mask_l;
+  mac_address[0] = mac_address[0] & mac_unicast_universal_mask[rand];
   return 0;
 }
 
-int mac_multicast(uint8_t *mac_address) {
+/**
+ * Returns 1 if the input is an unicast universally MAC address.
+ */
+int is_mac_unicast_universal(uint8_t *mac_address) {
+  // TODO: fix this when 0x_0 is defined, it will return 0 instead
+  // of 1.
+  for (int i=0; i<mac_unicast_universal_mask_l; i++)
+    if (mac_address[0] & ~mac_unicast_universal_mask[i])
+      return 1;
+  return 0;
+}
+
+/**
+ * Returns a random unicast locally administrated MAC
+ * address.
+ */
+int mac_unicast_local(uint8_t *mac_address) {
+  uint8_t rand = 0;
+  arc4random_buf(&rand, sizeof(uint8_t));
+  rand = rand % mac_unicast_local_mask_l;
+  mac_address[0] = mac_address[0] & mac_unicast_local_mask[rand];
+  return 0;
+}
+
+int is_mac_unicast_local(uint8_t *mac_address) {
+  for (int i=0; i<mac_unicast_local_mask_l; i++)
+    if (mac_address[0] & ~mac_unicast_local_mask[i])
+      return 1;
+  return 0;
+}
+
+/**
+ * Returns a random multicast universally administrated MAC
+ * address.
+ */
+int mac_multicast_universal(uint8_t *mac_address) {
+  uint8_t rand = 0;
+  arc4random_buf(&rand, sizeof(uint8_t));
+  rand = rand % mac_multicast_universal_mask_l;
+  mac_address[0] = mac_address[0] & mac_multicast_universal_mask[rand];
+  return 0;
+}
+
+/**
+ * Returns a random multicast locally administrated MAC
+ * address.
+ */
+int mac_multicast_local(uint8_t *mac_address) {
+  uint8_t rand = 0;
+  arc4random_buf(&rand, sizeof(uint8_t));
+  rand = rand % mac_multicast_local_mask_l;
+  mac_address[0] = mac_address[0] & mac_multicast_local_mask[rand];
   return 0;
 }
 
@@ -199,26 +145,4 @@ void mac_print(uint8_t *mac_address) {
       printf("%02x:", mac_address[i]);
   }
   printf("\n");
-}
-
-int usage() {
-  printf("Usage: %s [...]\n", command_opts.name);
-  return 0;
-}
-
-int main(int argc, char *argv[]) {
-  init();
-  parse_args(argc, argv);
-
-  show_opts();
-
-  if (command_opts.help) {
-    usage();
-    return 1;
-  }
-
-  mac_random(mac_address);
-  mac_print(mac_address);
-  mac_info(mac_address);
-  return 0;
 }
