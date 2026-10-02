@@ -3,6 +3,9 @@
 `mac_randomizer` is a small tool used to randomizer MAC addresses. At
 this time of writing, this tool is planned to run only on OpenBSD.
 
+**WARNING**: this is a pet project, you should probably not use it
+in production.
+
 ## Usage
 
 Print the help message.
