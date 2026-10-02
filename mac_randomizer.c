@@ -55,11 +55,14 @@ int mac_unicast_universal(uint8_t *mac_address) {
  * Returns 1 if the input is an unicast universally MAC address.
  */
 int is_mac_unicast_universal(uint8_t *mac_address) {
-  // TODO: fix this when 0x_0 is defined, it will return 0 instead
-  // of 1.
+  // special case when the first bytes are set to 0x00.
+  if ((mac_address[0] & ~0xf0) == 0)
+    return 1;
+
   for (int i=0; i<mac_unicast_universal_mask_l; i++)
     if (mac_address[0] & ~mac_unicast_universal_mask[i])
       return 1;
+
   return 0;
 }
 
