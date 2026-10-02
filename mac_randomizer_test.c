@@ -58,13 +58,13 @@ MU_TEST_SUITE(test_unicast_universal_mac_address_suite) {
  * Unicast/Local MAC address test.
  * TODO:
  ********************************************************************/
-MU_TEST_SUITE(test_unicast_local_mac_address_suite) {}
+// MU_TEST_SUITE(test_unicast_local_mac_address_suite) {}
 
 /*********************************************************************
  * Multicast/Universal MAC address test.
  * TODO:
  ********************************************************************/
-MU_TEST_SUITE(test_multicast_universal_mac_address_suite) {}
+// MU_TEST_SUITE(test_multicast_universal_mac_address_suite) {}
 // MU_TEST(test_multicast_universal_mac_address) {
   // uint8_t valid_multiuni0[MAC_SIZE] = {0x01, 0x12, 0x34, 0x56, 0x78, 0x9a};
   // uint8_t valid_multiuni1[MAC_SIZE] = {0x05, 0x12, 0x34, 0x56, 0x78, 0x9a};
@@ -77,7 +77,7 @@ MU_TEST_SUITE(test_multicast_universal_mac_address_suite) {}
  * Multicast/Local MAC address test.
  * TODO:
  ********************************************************************/
-MU_TEST_SUITE(test_multicastcast_local_mac_address_suite) {}
+// MU_TEST_SUITE(test_multicastcast_local_mac_address_suite) {}
 
 /*********************************************************************
  * Main test suite.

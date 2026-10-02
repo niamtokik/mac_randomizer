@@ -70,12 +70,10 @@ int init() {
 int parse_args(int argc, char *argv[]) {
   (void)strncpy(command_opts.name, argv[0], 128);
   uint8_t is_arg = 0;
-  char *params = NULL;
   for (int i=1; i<argc; i++) {
     for (int j=0; j<strnlen(argv[i], 256); j++) {
       if (j==0) {
         is_arg=0;
-        params = NULL;
       }
       switch (argv[i][j]) {
         case '-': 
@@ -97,14 +95,10 @@ int parse_args(int argc, char *argv[]) {
           if (j>0 && is_arg==1) command_opts.globally_unique=1;
           continue;
         case 'c': 
-          if (j>0 && is_arg==1) {
-            params = command_opts.country;
-          };
+          if (j>0 && is_arg==1) {};
           continue;
         case 'C':
-          if (j>0 && is_arg==1) {
-          params = command_opts.company;
-          }
+          if (j>0 && is_arg==1) {}
           continue;
       }
     }
