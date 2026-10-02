@@ -22,6 +22,9 @@ size_t mac_multicast_universal_mask_l = 4;
 uint8_t mac_multicast_local_mask[4] = {0xf3, 0xf7, 0xfb, 0xff};
 size_t mac_multicast_local_mask_l = 4;
 
+/**
+ *
+ */
 int mac_init(uint8_t *mac_address) {
   // start with a clean mac_address array
   bzero(mac_address, sizeof(uint8_t) * MAC_SIZE);
@@ -72,6 +75,9 @@ int mac_unicast_local(uint8_t *mac_address) {
   return 0;
 }
 
+/**
+ *
+ */
 int is_mac_unicast_local(uint8_t *mac_address) {
   for (int i=0; i<mac_unicast_local_mask_l; i++)
     if (mac_address[0] & ~mac_unicast_local_mask[i])
@@ -103,22 +109,37 @@ int mac_multicast_local(uint8_t *mac_address) {
   return 0;
 }
 
+/**
+ *
+ */
 int mac_extended_local(uint8_t *mac_address) {
   return 0;
 }
 
+/**
+ *
+ */
 int mac_standard_assigned(uint8_t *mac_address) {
   return 0;
 }
 
+/**
+ *
+ */
 int mac_administratively_assigned(uint8_t *mac_address) {
   return 0;
 }
 
+/**
+ *
+ */
 int mac_reserved(uint8_t *mac_address) {
   return 0;
 }
 
+/**
+ *
+ */
 int mac_info(uint8_t *mac_address) {
   uint8_t oui[3];
   bzero(oui, sizeof(uint8_t)*3);
@@ -137,6 +158,9 @@ int mac_info(uint8_t *mac_address) {
   return 0;
 }
 
+/**
+ *
+ */
 void mac_print(uint8_t *mac_address) {
   for (int i=0; i<MAC_SIZE; i++) {
     if (i==MAC_SIZE-1)
