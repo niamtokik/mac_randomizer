@@ -20,14 +20,6 @@
 #include "mac_randomizer.h"
 uint8_t mac_address[MAC_SIZE];
 
-/* MAC address information data structure */
-struct mac_info {
-  uint8_t oui[3];
-  uint8_t multicast;
-  uint8_t local;
-  uint8_t nic[3];
-};
-
 struct command_opts_s {
   // program name
   char name[128];
@@ -141,6 +133,5 @@ int main(int argc, char *argv[]) {
   mac_print(mac_address);
   printf("debug: %x\n", is_mac_unicast_local(mac_address));
   printf("debug: %x\n", is_mac_unicast_universal(mac_address));
-  mac_info(mac_address);
   return 0;
 }

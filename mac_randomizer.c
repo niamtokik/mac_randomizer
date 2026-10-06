@@ -14,7 +14,7 @@ uint8_t mac_unicast_universal_mask[4] = {0xf0, 0xf4, 0xf8, 0xfc};
 size_t mac_unicast_universal_mask_l = 4;
 
 uint8_t mac_unicast_local_mask[4] = {0xf2, 0xf6, 0xfa, 0xfe};
-size_t mac_unicast_local_mask_l  = 4;
+size_t mac_unicast_local_mask_l = 4;
 
 uint8_t mac_multicast_universal_mask[4] = {0xf1, 0xf5, 0xf9, 0xfd};
 size_t mac_multicast_universal_mask_l = 4;
@@ -23,7 +23,7 @@ uint8_t mac_multicast_local_mask[4] = {0xf3, 0xf7, 0xfb, 0xff};
 size_t mac_multicast_local_mask_l = 4;
 
 /**
- *
+ * set (or reset) to zero a mac address.
  */
 int mac_init(uint8_t *mac_address) {
   // start with a clean mac_address array
@@ -32,7 +32,8 @@ int mac_init(uint8_t *mac_address) {
 }
 
 /**
-* Gnererate a purely random mac address
+* Gnererate a purely random mac address. uses arc4random_buf
+* at this time.
 */
 int mac_random(uint8_t *mac_address) {
   arc4random_buf(mac_address, MAC_SIZE);
@@ -60,7 +61,7 @@ int is_mac_unicast_universal(uint8_t *mac_address) {
     return 1;
 
   for (int i=0; i<mac_unicast_universal_mask_l; i++)
-    if (mac_address[0] & ~mac_unicast_universal_mask[i])
+    if ((mac_address[0] & ~mac_unicast_universal_mask[i]) == 0)
       return 1;
 
   return 0;
@@ -74,17 +75,24 @@ int mac_unicast_local(uint8_t *mac_address) {
   uint8_t rand = 0;
   arc4random_buf(&rand, sizeof(uint8_t));
   rand = rand % mac_unicast_local_mask_l;
+  // TODO: fix when mac_address[0] is set to 0x_0
+  // it also impacts other functions.
   mac_address[0] = mac_address[0] & mac_unicast_local_mask[rand];
   return 0;
 }
 
 /**
- *
+ * Returns 1 if the mac address provided is an unicast
+ * locally administered address, else returns 0.
  */
 int is_mac_unicast_local(uint8_t *mac_address) {
+  if ((mac_address[0] & ~0xf0) == 0)
+    return 0;
+
   for (int i=0; i<mac_unicast_local_mask_l; i++)
-    if (mac_address[0] & ~mac_unicast_local_mask[i])
+    if ((mac_address[0] & ~mac_unicast_local_mask[i]) == 0)
       return 1;
+
   return 0;
 }
 
@@ -100,6 +108,17 @@ int mac_multicast_universal(uint8_t *mac_address) {
   return 0;
 }
 
+int is_mac_multicast_universal(uint8_t *mac_address) {
+  if ((mac_address[0] & ~0xf0) == 0)
+    return 0;
+
+  for (int i=0; i<mac_multicast_universal_mask_l; i++)
+    if ((mac_address[0] & ~mac_multicast_universal_mask[i]) == 0)
+      return 1;
+
+  return 0;
+}
+
 /**
  * Returns a random multicast locally administrated MAC
  * address.
@@ -109,6 +128,17 @@ int mac_multicast_local(uint8_t *mac_address) {
   arc4random_buf(&rand, sizeof(uint8_t));
   rand = rand % mac_multicast_local_mask_l;
   mac_address[0] = mac_address[0] & mac_multicast_local_mask[rand];
+  return 0;
+}
+
+int is_mac_multicast_local(uint8_t *mac_address) {
+  if ((mac_address[0] & ~0xf0) == 0)
+    return 0;
+
+  for (int i=0; i<mac_multicast_local_mask_l; i++)
+    if ((mac_address[0] & ~mac_multicast_local_mask[i]) == 0)
+      return 1;
+
   return 0;
 }
 
@@ -143,7 +173,7 @@ int mac_reserved(uint8_t *mac_address) {
 /**
  *
  */
-int mac_info(uint8_t *mac_address) {
+int mac_info(uint8_t *mac_address, struct mac_info_s *mac_info) {
   uint8_t oui[3];
   bzero(oui, sizeof(uint8_t)*3);
   uint32_t buf = 0;
