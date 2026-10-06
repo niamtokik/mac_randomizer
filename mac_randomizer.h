@@ -5,24 +5,45 @@
 #define MAC_SIZE 6
 
 //
-int mac_random(uint8_t *);
 int mac_init(uint8_t *);
+int mac_random(uint8_t *);
+
+int mac_parse(uint8_t *, char *, size_t);
 
 //
-int mac_unicast_universal(uint8_t *);
+int is_mac_broadcast(uint8_t *);
+
+//
+void mac_unicast_universal(uint8_t *);
 int is_mac_unicast_universal(uint8_t *);
 
 //
-int mac_unicast_local(uint8_t *);
+void mac_unicast_local(uint8_t *);
 int is_mac_unicast_local(uint8_t *);
 
 //
-int mac_multicast_universal(uint8_t *);
+void mac_multicast_universal(uint8_t *);
 int is_mac_multicast_universal(uint8_t *);
 
 //
-int mac_multicast_local(uint8_t *);
+void mac_multicast_local(uint8_t *);
 int is_mac_multicast_local(uint8_t *);
+
+//
+void mac_extended_local(uint8_t *);
+int is_mac_extended_local(uint8_t *);
+
+//
+void mac_standard_assigned(uint8_t *);
+int is_mac_standard_assigned(uint8_t *);
+
+//
+void mac_administratively_assigned(uint8_t *);
+int is_mac_administratively_assigned(uint8_t *);
+
+//
+void mac_reserved(uint8_t *);
+int is_mac_reserved(uint8_t *);
 
 // tooling and helper functions
 #define UNICAST_UNIVERSAL 0x00

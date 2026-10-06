@@ -184,6 +184,49 @@ MU_TEST_SUITE(test_multicast_local_mac_address_suite) {
 }
 
 /*********************************************************************
+ * ieee 802c 
+ ********************************************************************/
+MU_TEST(test_mac_address_ieee_802c) {
+  uint8_t mac_address[MAC_SIZE];
+  mac_init(mac_address);
+  mac_extended_local(mac_address);
+  mu_assert(is_mac_extended_local(mac_address) == 1, "mac extended local");
+
+  mac_init(mac_address);
+  mac_standard_assigned(mac_address);
+  mu_assert(is_mac_standard_assigned(mac_address) == 1, "mac standard assigned");
+
+  mac_init(mac_address);
+  mac_administratively_assigned(mac_address);
+  mu_assert(is_mac_administratively_assigned(mac_address) == 1, "mac administratively assigned");
+
+  mac_init(mac_address);
+  mac_reserved(mac_address);
+  mu_assert(is_mac_reserved(mac_address) == 1, "mac reserved");
+}
+
+MU_TEST_SUITE(test_mac_address_ieee_802c_suite) {
+  MU_RUN_TEST(test_mac_address_ieee_802c);
+}
+
+/*
+ *
+ */
+MU_TEST(test_mac_parser) {
+  char *string = "ff:ff:ff:ff:ff:ff";
+  uint8_t mac_address[MAC_SIZE];
+  mac_init(mac_address);
+  mac_parse(mac_address, string, 17);
+  mac_print(mac_address);
+  for (int i=0; i<MAC_SIZE; i++)
+    mu_assert(mac_address[i] == 0xff, "parser issue");
+}
+
+MU_TEST_SUITE(test_mac_parser_suite) {
+  MU_RUN_TEST(test_mac_parser);
+}
+
+/*********************************************************************
  * mac information
  ********************************************************************/
 MU_TEST(test_mac_address_info) {
@@ -210,6 +253,12 @@ int main() {
   // multicast suite
   MU_RUN_SUITE(test_multicast_universal_mac_address_suite);
   MU_RUN_SUITE(test_multicast_local_mac_address_suite);
+
+  // ieee802c extension
+  MU_RUN_SUITE(test_mac_address_ieee_802c_suite);
+
+  // parser
+  MU_RUN_SUITE(test_mac_parser_suite);
 
   // info
   MU_RUN_SUITE(test_mac_address_info_suite);
