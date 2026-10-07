@@ -9,6 +9,7 @@
 #include <strings.h>
 #include "mac.h"
 
+
 // a mac token contains the position of the token
 // the type of token (digit or separator) and its
 // raw value
@@ -128,8 +129,44 @@ uint8_t char_to_uint8(char c) {
   }
 }
 
+// this is the main parser, at this time, this is a naive
+// implementation parsing only the digit and ignoring the
+// separators.
+// TODO: add support for the separator
+// TODO: add a way to identify dynamically which kind of
+//       format is being used in the input
+int mac_parser(uint8_t *mac_address, struct token *tokens, size_t length) {
+  int i;
+  int counter = 0;
+  int address_index = 0;
+  uint8_t buffer = 0;
+
+  for (i=0; i<length; i++) {
+    (void)buffer;
+
+    if (i==0 && tokens[i].type != MAC_TOKEN_SEPARATOR_DIGIT) {
+      printf("error: mac address starting with a separator at position %d\n", i);
+      return -1;
+    }
+
+    if (tokens[i].type == MAC_TOKEN_SEPARATOR_DIGIT) {
+      buffer <<= 4;
+      buffer |= char_to_uint8(tokens[i].value);
+      if (counter%2) {
+        mac_address[address_index] = buffer;
+        buffer = 0;
+        address_index++;
+      }
+      counter++;
+    }
+  }
+  return 0;
+}
+
 // parse a string and convert it into mac address.
 int mac_parse(uint8_t *mac_address, char *string, size_t string_len) {
+  bzero(mac_address, sizeof(uint8_t)*MAC_SIZE);
+
   struct token tokens[string_len];
   bzero(tokens, sizeof(struct token)*string_len);
 
@@ -138,17 +175,8 @@ int mac_parse(uint8_t *mac_address, char *string, size_t string_len) {
     if (ret<0) return -1;
   }
 
-  // int digit_index=0;
-  for (int i=0; i<string_len; i++) {
-    if (i==0 && tokens[i].type != MAC_TOKEN_SEPARATOR_DIGIT) {
-      printf("error: mac address starting with a separator at position %d\n", i);
-      return -1;
-    }
-
-    if (tokens[i].type == MAC_TOKEN_SEPARATOR_DIGIT) {
-      // uint8_t value = char_to_uint8(tokens[i].value);
-    }
-  }
+  if (mac_parser(mac_address, tokens, string_len)<0)
+    return -1;
 
   return 0;
 }

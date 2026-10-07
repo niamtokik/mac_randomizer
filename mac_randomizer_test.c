@@ -2,8 +2,15 @@
  * MAC Randomizer MinUnit Test Suite.
  ********************************************************************/
 #include <stdio.h>
+#include <stdlib.h>
 #include "minunit.h"
 #include "mac.h"
+
+// helper function to print mac address if DEBUG flag is set.
+void _mac_print(uint8_t *mac_address){
+  if (getenv("DEBUG"))
+    mac_print(mac_address);
+}
 
 /*********************************************************************
  * initialization function test.
@@ -55,7 +62,7 @@ MU_TEST(test_unicast_universal_mac_address_generator) {
   mac_init(random_mac_address);
   mac_random(random_mac_address);
   mac_unicast_universal(random_mac_address);
-  mac_print(random_mac_address);
+  _mac_print(random_mac_address);
   mu_assert(is_mac_unicast_universal(random_mac_address) == 1, "must be an unicast universal mac address");
 }
 
@@ -89,7 +96,7 @@ MU_TEST(test_unicast_local_mac_address_generator) {
   mac_init(random_mac_address);
   mac_random(random_mac_address);
   mac_unicast_local(random_mac_address);
-  mac_print(random_mac_address);
+  _mac_print(random_mac_address);
   mu_assert(is_mac_unicast_local(random_mac_address) == 1, "must be an unicast local mac address");
 }
 
@@ -123,7 +130,7 @@ MU_TEST(test_multicast_universal_mac_address_generator) {
   mac_init(random_mac_address);
   mac_random(random_mac_address);
   mac_multicast_universal(random_mac_address);
-  mac_print(random_mac_address);
+  _mac_print(random_mac_address);
   mu_assert(is_mac_multicast_universal(random_mac_address) == 1, "must be a multicast universal mac address");
 }
 
@@ -157,7 +164,7 @@ MU_TEST(test_multicast_local_mac_address_generator) {
   mac_init(random_mac_address);
   mac_random(random_mac_address);
   mac_multicast_local(random_mac_address);
-  mac_print(random_mac_address);
+  _mac_print(random_mac_address);
   mu_assert(is_mac_multicast_local(random_mac_address) == 1, "must be a multicast local mac address");
 }
 
@@ -219,7 +226,7 @@ MU_TEST(test_mac_parser) {
 
   mac_init(mac_address);
   ret = mac_parse(mac_address, string, 17);
-  mac_print(mac_address);
+  _mac_print(mac_address);
   mu_assert(ret == 0, "broadcast address parsing issue");
   for (int i=0; i<MAC_SIZE; i++) mu_assert(mac_address[i] == 0xff, "broadcast address");
 
@@ -227,43 +234,55 @@ MU_TEST(test_mac_parser) {
   char *string2 = "00:00:00:00:00:00";
   mac_init(mac_address);
   ret = mac_parse(mac_address, string2, 17);
-  mac_print(mac_address);
+  _mac_print(mac_address);
   mu_assert(ret == 0, "null address parsing issue");
   for (int i=0; i<MAC_SIZE; i++) mu_assert(mac_address[i] == 0x00, "null address");
 
   // "random" valid lower case mac address
-  // ret = 0;
-  // char *string3 = "12:34:56:78:9a:bc";
+  ret = 0;
+  char *string3 = "12:34:56:78:9a:bc";
+  mac_init(mac_address);
+  ret = mac_parse(mac_address, string3, 17);
+  _mac_print(mac_address);
+  mu_assert(ret == 0, "random valid lowercase address parsing issue");
 
   // "random" valid uppercase mac address
-  // ret = 0;
-  // char *string4 = "12:34:56:78:9A:BC";
+  ret = 0;
+  char *string4 = "12:34:56:78:9A:BC";
+  mac_init(mac_address);
+  ret = mac_parse(mac_address, string4, 17);
+  _mac_print(mac_address);
+  mu_assert(ret == 0, "random valid uppercase address parsing issue");
 
   // "random" valid mixed mac address
-  // ret = 0;
-  // char *string5 = "12:34:56:78:9a:Bc";
+  ret = 0;
+  char *string5 = "12:34:56:78:9a:Bc";
+  mac_init(mac_address);
+  ret = mac_parse(mac_address, string5, 17);
+  _mac_print(mac_address);
+  mu_assert(ret == 0, "random valid mixed address parsing issue");
 
   // "random" valid mac address
   // ret = 0;
-  // char *string5 = "12-34-56-78-9a-Bc";
-
-  // "random" valid mac address
-  // ret = 0;
-  // char *string5 = "1234.5678.9aBc";
+  // char *string7 = "1234.5678.9aBc";
+  // mac_init(mac_address);
+  // ret = mac_parse(mac_address, string7, 17);
+  // mac_print(mac_address);
+  // mu_assert(ret == 0, "random address parsing issue");
 
   // starting with invalid char
   // a mac address can't start a space
-  // ret = 0;
+  // ret = -1;
   // char *invalid_string1 = " ff:ff:ff:ff:ff:ff";
 
   // starting with invalid char
   // a mac address can't start with a column
-  // ret = 0;
+  // ret = -1;
   // char *invalid_string1 = ":ff:ff:ff:ff:ff:ff";
 
   // starting with invalid char
   // a mac address can't start with a dash
-  // ret = 0;
+  // ret = -1;
   // char *invalid_string1 = "-ff-ff-ff-ff-ff-ff";
 }
 
