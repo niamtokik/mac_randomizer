@@ -3,7 +3,7 @@
  ********************************************************************/
 #include <stdio.h>
 #include "minunit.h"
-#include "mac_randomizer.h"
+#include "mac.h"
 
 /*********************************************************************
  * initialization function test.
@@ -213,13 +213,58 @@ MU_TEST_SUITE(test_mac_address_ieee_802c_suite) {
  *
  */
 MU_TEST(test_mac_parser) {
+  int ret = 0;
   char *string = "ff:ff:ff:ff:ff:ff";
   uint8_t mac_address[MAC_SIZE];
+
   mac_init(mac_address);
-  mac_parse(mac_address, string, 17);
+  ret = mac_parse(mac_address, string, 17);
   mac_print(mac_address);
-  for (int i=0; i<MAC_SIZE; i++)
-    mu_assert(mac_address[i] == 0xff, "parser issue");
+  mu_assert(ret == 0, "broadcast address parsing issue");
+  for (int i=0; i<MAC_SIZE; i++) mu_assert(mac_address[i] == 0xff, "broadcast address");
+
+  ret = 0;
+  char *string2 = "00:00:00:00:00:00";
+  mac_init(mac_address);
+  ret = mac_parse(mac_address, string2, 17);
+  mac_print(mac_address);
+  mu_assert(ret == 0, "null address parsing issue");
+  for (int i=0; i<MAC_SIZE; i++) mu_assert(mac_address[i] == 0x00, "null address");
+
+  // "random" valid lower case mac address
+  // ret = 0;
+  // char *string3 = "12:34:56:78:9a:bc";
+
+  // "random" valid uppercase mac address
+  // ret = 0;
+  // char *string4 = "12:34:56:78:9A:BC";
+
+  // "random" valid mixed mac address
+  // ret = 0;
+  // char *string5 = "12:34:56:78:9a:Bc";
+
+  // "random" valid mac address
+  // ret = 0;
+  // char *string5 = "12-34-56-78-9a-Bc";
+
+  // "random" valid mac address
+  // ret = 0;
+  // char *string5 = "1234.5678.9aBc";
+
+  // starting with invalid char
+  // a mac address can't start a space
+  // ret = 0;
+  // char *invalid_string1 = " ff:ff:ff:ff:ff:ff";
+
+  // starting with invalid char
+  // a mac address can't start with a column
+  // ret = 0;
+  // char *invalid_string1 = ":ff:ff:ff:ff:ff:ff";
+
+  // starting with invalid char
+  // a mac address can't start with a dash
+  // ret = 0;
+  // char *invalid_string1 = "-ff-ff-ff-ff-ff-ff";
 }
 
 MU_TEST_SUITE(test_mac_parser_suite) {

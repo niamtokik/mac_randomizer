@@ -17,7 +17,7 @@
 #include <unistd.h>
 #include <string.h>
 #include <strings.h>
-#include "mac_randomizer.h"
+#include "mac.h"
 uint8_t mac_address[MAC_SIZE];
 
 struct command_opts_s {

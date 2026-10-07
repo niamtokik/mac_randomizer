@@ -3,12 +3,16 @@
  */
 
 #define MAC_SIZE 6
+#define MAC_TOKEN_SEPARATOR_DIGIT 0x01
+#define MAC_TOKEN_SEPARATOR_COLUMN 0x02
+#define MAC_TOKEN_SEPARATOR_DASH 0x03
+#define MAC_TOKEN_SEPARATOR_DOT 0x04
 
-//
+// cleanup and initialize a mac address buffer
 int mac_init(uint8_t *);
-int mac_random(uint8_t *);
 
-int mac_parse(uint8_t *, char *, size_t);
+// generate random mac address
+int mac_random(uint8_t *);
 
 //
 int is_mac_broadcast(uint8_t *);
@@ -44,6 +48,9 @@ int is_mac_administratively_assigned(uint8_t *);
 //
 void mac_reserved(uint8_t *);
 int is_mac_reserved(uint8_t *);
+
+// parser from mac_parser.c
+int mac_parse(uint8_t *, char *, size_t);
 
 // tooling and helper functions
 #define UNICAST_UNIVERSAL 0x00
