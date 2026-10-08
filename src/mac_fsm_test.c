@@ -58,8 +58,9 @@ void enter(struct state *s, struct state_data *);
 struct state *input1(char, struct state *, struct state_data *);
 struct state *input2(char, struct state *, struct state_data *);
 
+int counter = 0;
 struct state_data sd = {
-  .data = (int *)(255),
+  .data = (int *)&counter,
   .length = sizeof(int),
 };
 
@@ -80,19 +81,18 @@ struct state s2 = {
 };
 
 void enter(struct state *s, struct state_data *sd) {
-  int data;
-  size_t length = sd->length;
-  memcpy(&data, &sd->data, length);
-  printf("enter: data:%d length:%zu\n", data, length);
+  printf("enter: data:%d length:%zu\n", *(int *)(sd->data), sd->length);
 }
 
 struct state *input1(char c, struct state *s, struct state_data *sd) {
-  printf("input1: %c\n", c);
+  (*(int*)(sd->data))++;
+  printf("input1: data:%d length:%zu\n", *(int *)(sd->data), sd->length);
   return &s2;
 }
 
 struct state *input2(char c, struct state *s, struct state_data *sd) {
-  printf("input2: %c\n", c);
+  (*(int*)(sd->data))++;
+  printf("input2: data:%d length:%zu\n", *(int *)(sd->data), sd->length);
   if (c==0) s->status=1;
   return s;
 }
