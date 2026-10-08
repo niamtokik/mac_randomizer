@@ -107,6 +107,83 @@ MU_TEST_SUITE(test_fsm_suite) {
 }
 
 /*********************************************************************
+ * DRAFT: mac address parsing use case
+ ********************************************************************/
+// an undefined input, usually checking the first character to parse
+// and then analysis the rest of the content until a valid separator
+// is found.
+struct state *mac_input_undefined(char, struct state*, struct state_data*);
+struct state mac_input_undefined_s = {
+  .name = "undefined",
+  .status = 0x0,
+  .handler_input = mac_input_undefined,
+};
+
+// an ieee input, supporting only dash separator: xx-xx-xx-xx-xx-xx
+struct state *mac_input_ieee(char, struct state*, struct state_data*);
+struct state mac_input_ieee_s = {
+  .name = "ieee",
+  .status = 0x0,
+  .handler_input = mac_input_undefined,
+};
+
+// an ietf input, supporting only column separator: xx:xx:xx:xx:xx:xx
+struct state *mac_input_ietf(char, struct state*, struct state_data*);
+struct state mac_input_ietf_s = {
+  .name = "ietf",
+  .status = 0x0,
+  .handler_input = mac_input_undefined,
+};
+
+// a cisco input, supporting only dot separator: xxxx.xxxx.xxx
+struct state *mac_input_cisco(char, struct state*, struct state_data*);
+struct state mac_input_cisco_s = {
+  .name = "cisco",
+  .status = 0x0,
+  .handler_input = mac_input_undefined,
+};
+
+// this is an example of a parser implementation using the fsm.
+//
+// the state_data should contain:
+//   - buffer for the mac address
+//   - position of the cursor
+struct state *mac_input_undefined(char c, struct state *s, struct state_data *sd) {
+  // not sure where the position should be defined, it can be in the state
+  // itself, or defined in the state data. if it's in the state data, everytime
+  // a char is given by the fsm, the handler must increment the position.
+  int position = s->position;
+
+  // the buffer containing the decoded mac_address
+  uint8_t *mac_address = sd->data->mac_address;
+
+  // the length of the buffer (it should be also compatible with eui64)
+  size_t *mac_address_length = sd->data->mac_address_length;
+
+  // check if the first char is a valid hex digit
+  if (position==0 && is_not_hex(c)) s->status=1;
+
+  // this is a dash. continue on ieee parser
+  if (is_sep_dash(c) && position==2) 
+    return mac_input_ieee;
+
+  // this is a column, continue on ietf parser
+  if (is_sep_column(c) && position==2)
+    return mac_input_ietf;
+
+  // this is a dot, continue on cisco parser
+  if (is_sep_dot(c) && position==5)
+    return mac_input_cisco;
+
+  // we are not sure if it's valid until no separator
+  // was found in the string, update the mac address
+  // buffer if everything looks good.
+  if (is_hex(c) && position>0 && position<5) {
+    return s;
+  }
+}
+
+/*********************************************************************
  * Main test suite.
  ********************************************************************/
 int main() {
