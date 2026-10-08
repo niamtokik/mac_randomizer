@@ -28,68 +28,60 @@
  *
  * ------------------------------------------------------------------
  *
- * MAC Randomizer headers.
+ * DRAFT: mac_fsm: flexible minimalist mealy-like machine implementation.
+ *
+ *
+ * This code implements a mealy-like finite state machine mainly used to parse
+ * mac addresses (and other specific input) instead of reusing regexp
+ * libraries.
+ *
+ * The states are statically created using C data-structure. The states embed
+ * handlers to deal with the input and the stored data.
  *
  */
-#define MAC_SIZE 6
-#define MAC_TOKEN_SEPARATOR_DIGIT 0x01
-#define MAC_TOKEN_SEPARATOR_COLUMN 0x02
-#define MAC_TOKEN_SEPARATOR_DASH 0x03
-#define MAC_TOKEN_SEPARATOR_DOT 0x04
+#include <stdio.h>
+#include <stdlib.h>
+#include <sys/types.h>
+#include <unistd.h>
+#include <string.h>
+#include <strings.h>
+#include "mac.h"
 
-// cleanup and initialize a mac address buffer
-int mac_init(uint8_t *);
+// exported state
+typedef struct state {
+  // a status is returned with its returned and checked
+  // by the fsm. If the the status is different than 0,
+  // then this is an error.
+  int status;
 
-// generate random mac address
-int mac_random(uint8_t *);
+  // the state also embed its own data. a data_length
+  // field has been created to help storing more information
+  // about the eventual length of the data.
+  void *data;
+  size_t data_length;
 
-//
-int is_mac_broadcast(uint8_t *);
+  // the handler_enter function is executed when
+  // a transition occurs, S0 -> S1.enter() -> S1
+  struct state *(*handler_enter)(char *, struct state*);
 
-//
-void mac_unicast_universal(uint8_t *);
-int is_mac_unicast_universal(uint8_t *);
+  // then handler_input function is executed when the
+  // state is set. S0.input(
+  struct state *(*handler_input)(char *, struct state*);
+} state;
 
-//
-void mac_unicast_local(uint8_t *);
-int is_mac_unicast_local(uint8_t *);
-
-//
-void mac_multicast_universal(uint8_t *);
-int is_mac_multicast_universal(uint8_t *);
-
-//
-void mac_multicast_local(uint8_t *);
-int is_mac_multicast_local(uint8_t *);
-
-//
-void mac_extended_local(uint8_t *);
-int is_mac_extended_local(uint8_t *);
-
-//
-void mac_standard_assigned(uint8_t *);
-int is_mac_standard_assigned(uint8_t *);
-
-//
-void mac_administratively_assigned(uint8_t *);
-int is_mac_administratively_assigned(uint8_t *);
-
-//
-void mac_reserved(uint8_t *);
-int is_mac_reserved(uint8_t *);
-
-// parser from mac_parser.c
-int mac_parse(uint8_t *, char *, size_t);
-
-// tooling and helper functions
-#define UNICAST_UNIVERSAL 0x00
-#define UNICAST_LOCAL 0x01
-#define MULTICAST_UNIVERSAL 0x02
-#define MULTICAST_LOCAL 0x03
-
-struct mac_info_s {
-  uint8_t type;
+struct __fsm_state {
+  int counter;
 };
 
-void mac_print(uint8_t *);
-int mac_info(uint8_t *, struct mac_info_s *);
+int fsm_init(struct __fsm_state *);
+int fsm_start(struct state *, char *, size_t, void *);
+
+// init the finite state machine environment
+int fsm_init(struct __fsm_state *fsm_state) {
+  return -1;
+}
+
+// start the finite state machine
+int fsm_start(struct state *init, char *input, size_t length, void *data_init) {
+  return -1;
+}
