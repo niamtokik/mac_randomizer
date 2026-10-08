@@ -32,6 +32,9 @@
  *
  */
 #define MAC_SIZE 6
+// TODO: implement MAC EUI48/64:
+// #define MAC_EUI_48_SIZE 6
+// #define MAC_EUI_64_SIZE 8
 #define MAC_TOKEN_SEPARATOR_DIGIT 0x01
 #define MAC_TOKEN_SEPARATOR_COLUMN 0x02
 #define MAC_TOKEN_SEPARATOR_DASH 0x03
@@ -93,3 +96,8 @@ struct mac_info_s {
 
 void mac_print(uint8_t *);
 int mac_info(uint8_t *, struct mac_info_s *);
+
+/*
+ * mac fsm section
+ */
+#include "mac_fsm.h"

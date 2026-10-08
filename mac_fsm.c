@@ -41,12 +41,6 @@
  * When the FSM is in a state it can change to another state by returning a
  * pointer to a new (or existing) state.
  *
- * ## Continuous Execution
- *
- * ## Step by Step
- *
- * ## Debugging and Tracing
- *
  */
 #include <stdio.h>
 #include <stdlib.h>
@@ -60,10 +54,6 @@
 struct __fsm_state {
   int counter;
 };
-
-// exported functions.
-int fsm_state_init(state *);
-int fsm_start(char *, size_t, struct state *, struct state_data *);
 
 // initialize a state
 int fsm_state_init(state *s) {
@@ -98,6 +88,8 @@ int fsm_start(char *input, size_t length, struct state *s, struct state_data *d)
 
     // simple guards to avoid messing with the fsm.
     if (current_state == NULL) return -1;
+    if (current_state->status<0) return -1;
+    if (current_state->status==0) return 0;
     if (current_state->handler_input == NULL) return -1;
 
     // execute the input handler with the data from the 
@@ -116,8 +108,6 @@ int fsm_start(char *input, size_t length, struct state *s, struct state_data *d)
 
     // finally, the returned state is becoming the current_state
     current_state = ret_state;
-    if (current_state->status<0) return -1;
-    if (current_state->status==1) return 0;
   }
 
   // this is not normal, it means the finite state
