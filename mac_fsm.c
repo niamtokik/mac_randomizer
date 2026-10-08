@@ -38,6 +38,9 @@
  * The states are statically created using C data-structure. The states embed
  * handlers to deal with the input and the stored data.
  *
+ * When the FSM is in a state it can change to another state by returning a
+ * pointer to a new (or existing) state.
+ *
  */
 #include <stdio.h>
 #include <stdlib.h>
@@ -47,41 +50,106 @@
 #include <strings.h>
 #include "mac.h"
 
+// data living alongside the state. It is mostly used to contain
+// the final parsed data for example, let consider it has the
+// "output" of the fsm
+typedef struct state_data {
+  void *data;
+  size_t length;
+} state_data;
+
 // exported state
 typedef struct state {
+  // a state can have a name to help identify it during
+  // code execution.
+  char *name;
+
+  // a state can be set with different information to help
+  // debugging it.
+  int debug;
+
   // a status is returned with its returned and checked
   // by the fsm. If the the status is different than 0,
   // then this is an error.
+  //   status<0: error
+  //   status==0: end
+  //   status==1: run
   int status;
 
-  // the state also embed its own data. a data_length
-  // field has been created to help storing more information
-  // about the eventual length of the data.
-  void *data;
-  size_t data_length;
-
   // the handler_enter function is executed when
-  // a transition occurs, S0 -> S1.enter() -> S1
-  struct state *(*handler_enter)(char *, struct state*);
+  // a transition occurs, S0 -> S1.handler_enter() -> S1
+  void (*handler_enter)(struct state*, struct state_data*);
 
   // then handler_input function is executed when the
-  // state is set. S0.input(
-  struct state *(*handler_input)(char *, struct state*);
+  // state is set. S0.handler_input()
+  struct state *(*handler_input)(char, struct state*, struct state_data*);
 } state;
 
+// internal state for the fsm
 struct __fsm_state {
   int counter;
 };
 
-int fsm_init(struct __fsm_state *);
-int fsm_start(struct state *, char *, size_t, void *);
+// exported functions.
+int fsm_state_init(state *);
+int fsm_start(char *, size_t, struct state *, struct state_data *);
 
-// init the finite state machine environment
-int fsm_init(struct __fsm_state *fsm_state) {
-  return -1;
+// initialize a state
+int fsm_state_init(state *s) {
+  bzero(s, sizeof(state));
+  return 0;
+}
+
+// check if the handler_input is not NULL
+int fsm_state_is_valid_handler_input(state *s) {
+  if (s->handler_input) return 0;
+  return 1;
+}
+
+// check if the handler_enter is not NULL
+int fsm_state_is_valid_handler_enter(state *s) {
+  if (s->handler_enter) return 0;
+  return 1;
 }
 
 // start the finite state machine
-int fsm_start(struct state *init, char *input, size_t length, void *data_init) {
+int fsm_start(char *input, size_t length, struct state *s, struct state_data *d) {
+  // TODO: to check
+  struct state_data *current_data = d;
+
+  // TODO: to check
+  struct state *current_state = s;
+
+  int i;
+  for(i=0; i<length; i++) {
+    // extract the character from the input
+    char c = input[i];
+
+    // simple guards to avoid messing with the fsm.
+    if (current_state == NULL) return -1;
+    if (current_state->status<0) return -1;
+    if (current_state->status==0) return 0;
+    if (current_state->handler_input == NULL) return -1;
+
+    // execute the input handler with the data from the 
+    // string.
+    struct state *ret_state;
+    ret_state = current_state->handler_input(c, current_state, current_data);
+
+    // the returned state is null, this is an error
+    if (ret_state == NULL) return -1;
+
+    // if the returned state has a different address than the
+    // current state and if handler_enter is not null, then
+    // enter handler is executed.
+    if (ret_state != current_state && ret_state->handler_enter)
+      ret_state->handler_enter(ret_state, current_data);
+
+    // finally, the returned state is becoming the current_state
+    current_state = ret_state;
+  }
+
+  // this is not normal, it means the finite state
+  // machine did not end correctly.
   return -1;
 }
