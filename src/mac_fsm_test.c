@@ -117,11 +117,73 @@ MU_TEST_SUITE(test_fsm_pingpong_suite) {
 }
 
 /*********************************************************************
+ * fsm mac tokenizer + parser
+ ********************************************************************/
+// custom output structure to embed the final mac address.
+struct output {
+  uint8_t *mac_address;
+  size_t mac_address_length;
+  int position;
+};
+
+state_t *tokenizer(input_t *i, output_t *o, state_t *s) {
+  // dereference input
+  size_t string_length = i->input_length;
+  char *string = i->input;
+  printf("%s %zu\n", string, string_length);
+
+  // derefrence output
+  // size_t output_length = o->output_length;
+  struct output *output = o->output;
+  printf("%d\n", output->position);
+
+  // increment the position of the cursor
+  output->position = output->position+1;
+
+  // return ok for now, this is not a loop, this is just design test
+  fsm_state_ok(s);
+  return s;
+}
+
+MU_TEST(test_fsm_tokenizer) {
+  input_t si;
+  output_t so;
+  state_t s;
+  fsm_init(&si, &so, &s);
+
+  // configure the input
+  char *string = "01:23:45:67:89:ab";
+  size_t string_length = strlen(string);
+  si.input = string;
+  si.input_length = string_length;
+
+  // configure the output
+  uint8_t mac_address[6];
+  struct output output = {
+    .mac_address = mac_address,
+    .mac_address_length = sizeof(uint8_t) * 6,
+    .position = 0,
+  };
+  so.output = &output;
+  so.output_length = sizeof(struct output);
+
+  // start the tokenizer
+  fsm_state_handler(tokenizer, &s);
+  int ret = fsm_start(&si, &so, &s);
+  mu_assert(ret == 0, "ret issue");
+}
+
+MU_TEST_SUITE(test_fsm_tokenizer_suite) {
+  MU_RUN_TEST(test_fsm_tokenizer);
+}
+
+/*********************************************************************
  * Main test suite.
  ********************************************************************/
 int main() {
   MU_RUN_SUITE(test_fsm_counter_suite);
   MU_RUN_SUITE(test_fsm_pingpong_suite);
+  MU_RUN_SUITE(test_fsm_tokenizer_suite);
   MU_REPORT();
   return MU_EXIT_CODE;
 }

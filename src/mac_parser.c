@@ -49,6 +49,8 @@ struct token {
   int position;
   int type;
   char value;
+  void *data;
+  size_t data_length; 
 };
 
 // TODO: a safer approach is to create a struct
