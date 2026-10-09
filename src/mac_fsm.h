@@ -26,9 +26,13 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  *
+ * ------------------------------------------------------------------
+ *
+ * TODO: create macros to help creating the FSM.
+ *
  */
 
-// supported FSM state.
+// supported FSM state's statuses.
 enum fsm_status {
   ERROR,
   OK,

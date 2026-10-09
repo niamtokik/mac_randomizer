@@ -30,6 +30,38 @@
  *
  * mac_fsm: flexible minimalist finite state machine implementation.
  *
+ * At this time, the state_t datastructure can be used with only one
+ * instance. Indeed, it is possible to apply the transition only when
+ * the handler function is changed. A better solution (but adding
+ * more LoC) is to create a state_t structure for each state, with
+ * their own handlers. In some situation though (e.g. parsing a string),
+ * using one state should be enough.
+ *
+ * TODO: add in the documentation.
+ *
+ * TODO: add handler_init to be called when the fsm_start function
+ *       is used. it should be used to initialize input, output and
+ *       eventually state.
+ *
+ * TODO: add handler_error to be called in case of error, default to
+ *       NULL to disable the feature. can be used to close a file
+ *       descriptor or free memory.
+ *
+ * TODO: add handler_ok to be called when everything has been
+ *       correctly done. It can be used to ensure a file descriptor
+ *       must be closed or memory freed at the end of the fsm.
+ *
+ * TODO: add handler_enter to be called when a transition happens
+ *       (when the pointer to the handler change). it should not
+ *       have access to the input, only to the output.
+ *
+ * TODO: add handler_previous to be set with the previous function
+ *       called.
+ *
+ * TODO: add debug flag and debug functions(s).
+ *
+ * TODO: add trace flag and tracing function(s).
+ *
  */
 #include <stdio.h>
 #include <stdlib.h>
