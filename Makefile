@@ -18,6 +18,9 @@ CC_FLAGS ?= -std=c99 -O2 -static -Wall -Werror -Wformat=2 \
 # C compiler debug flags to help debugging with gdb
 CC_FLAGS_DEBUG ?= $(CC_FLAGS) -g3 -ggdb -gdwarf
 
+# static analysis tool
+CLANG_CHECK ?= /usr/local/bin/clang-check-21
+
 # default source directory
 SRC_DIR = ./src
 
@@ -96,6 +99,10 @@ all: $(BUILD_DIR)/mac
 
 .PHONY += auto
 auto: clean all test
+
+.PHONY += static-analysis
+static-analysis:
+	$(CLANG_CHECK) $(SRC_DIR)/*.c
 
 .PHONY += test
 test: $(TESTS)

@@ -56,71 +56,68 @@
 #include <strings.h>
 #include "mac.h"
 
-// internal state for the fsm
-struct __fsm_state {
-  int counter;
-};
-
-// exported functions.
-int fsm_state_init(state *);
-int fsm_start(char *, size_t, struct state *, struct state_data *);
-
-// initialize a state
-int fsm_state_init(state *s) {
-  bzero(s, sizeof(state));
+int fsm_state_init(state_t *s) {
+  bzero(s, sizeof(state_t));
   return 0;
 }
 
-// check if the handler_input is not NULL
-int fsm_state_is_valid_handler_input(state *s) {
-  if (s->handler_input) return 0;
-  return 1;
+int fsm_input_init(input_t *si) {
+  bzero(si, sizeof(input_t));
+  return 0;
 }
 
-// check if the handler_enter is not NULL
-int fsm_state_is_valid_handler_enter(state *s) {
-  if (s->handler_enter) return 0;
-  return 1;
+int fsm_output_init(output_t *so) {
+  bzero(so, sizeof(output_t));
+  return 0;
 }
 
-// start the finite state machine
-int fsm_start(char *input, size_t length, struct state *s, struct state_data *d) {
-  // TODO: to check
-  struct state_data *current_data = d;
+void fsm_state_ok(state_t *s) {
+  s->status = OK;
+  s->message = NULL;
+}
 
-  // TODO: to check
-  struct state *current_state = s;
+void fsm_state_continue(state_t *s) {
+  s->status = CONTINUE;
+  s->message = NULL;
+}
 
-  int i;
-  for(i=0; i<length; i++) {
-    // extract the character from the input
-    char c = input[i];
+void fsm_state_error(char *msg, state_t *s) {
+  s->status = ERROR;
+  s->message = msg;
+}
 
-    // simple guards to avoid messing with the fsm.
-    if (current_state == NULL) return -1;
-    if (current_state->handler_input == NULL) return -1;
+void fsm_state_handler(struct __state *(*handler)(input_t *, output_t *, struct __state *), state_t *s) {
+  // if (s->handler != handler) set_state_enter(s);
+  s->handler = handler;
+}
 
-    // execute the input handler with the data from the 
-    // string.
-    struct state *ret_state;
-    ret_state = current_state->handler_input(c, current_state, current_data);
+int fsm_init(input_t *i, output_t *o, state_t *s) {
+  if (fsm_state_init(s)<0) return -1;
+  if (fsm_input_init(i)<0) return -1;
+  if (fsm_output_init(o)<0) return -1;
+  return 0;
+}
 
-    // the returned state is null, this is an error
-    if (ret_state == NULL) return -1;
+int fsm_check(input_t *i, output_t *o, state_t *s) {
+  if (s == NULL) return -1;
+  if (s->handler == NULL) return -1;
+  return 0;
+}
 
-    // if the returned state has a different address than the
-    // current state and if handler_enter is not null, then
-    // enter handler is executed.
-    if (ret_state != current_state && ret_state->handler_enter)
-      ret_state->handler_enter(ret_state, current_data);
-
-    // finally, the returned state is becoming the current_state
-    current_state = ret_state;
-    if (current_state->status<0) return -1;
-    if (current_state->status==1) return 0;
+int fsm_loop(input_t *i, output_t *o, state_t *s) {
+  for (;;) {
+    if (fsm_check(i, o, s) <0) return -1; 
+    state_t *ret_state = s->handler(i, o, s);
+    if (fsm_check(i, o, s) <0) return -1; 
+    if (ret_state->status == ERROR) return -1;
+    if (ret_state->status == OK) return 0;
+    if (ret_state->status == CONTINUE) {
+      s = ret_state;
+    }
   }
-
-  // this is not normal, it means the finite state
-  // machine did not end correctly.
   return -1;
+}
+
+int fsm_start(input_t *i, output_t *o, state_t *s) {
+  return fsm_loop(i, o, s);
 }

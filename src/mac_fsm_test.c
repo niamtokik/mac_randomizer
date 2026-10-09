@@ -32,162 +32,96 @@
 #include "minunit.h"
 #include "mac.h"
 
-// Notes:
-// -----
-//
-// a generator/producer function is required to return the appropriate
-// kind of data. The FSM is agnostic and does not care about the kind
-// of data passed, only the state handlers care about that.
-//
-//   size_t generator(void *data) {
-//     data = 't';
-//     return sizeof(char);
-//   }
-//
-// here a draft of the idea:
-//
-//   size_t (g)(void *) = generator;
-//   struct state *s;
-//   struct state_data *d;
-//   fsm_start(g, state, state_data);
-
 /*********************************************************************
- * generic fsm use case
+ * fsm counter
  ********************************************************************/
-void enter(struct state *s, struct state_data *);
-struct state *input1(char, struct state *, struct state_data *);
-struct state *input2(char, struct state *, struct state_data *);
-
-int counter = 0;
-struct state_data sd = {
-  .data = (int *)&counter,
-  .length = sizeof(int),
-};
-
-struct state s1 = {
-  .name = "counter",
-  .debug = 0x0,
-  .status = 0x0,
-  .handler_enter = enter,
-  .handler_input = input1,
-};
-
-struct state s2 = {
-  .name = "counter2",
-  .debug = 0x0,
-  .status = 0x0,
-  .handler_enter = enter,
-  .handler_input = input2,
-};
-
-void enter(struct state *s, struct state_data *sd) {
-  printf("enter: data:%d length:%zu\n", *(int *)(sd->data), sd->length);
-}
-
-struct state *input1(char c, struct state *s, struct state_data *sd) {
-  (*(int*)(sd->data))++;
-  printf("input1: data:%d length:%zu\n", *(int *)(sd->data), sd->length);
-  return &s2;
-}
-
-struct state *input2(char c, struct state *s, struct state_data *sd) {
-  (*(int*)(sd->data))++;
-  printf("input2: data:%d length:%zu\n", *(int *)(sd->data), sd->length);
-  if (c==0) s->status=1;
+state_t *counter(input_t *i, output_t *o, state_t *s) {
+  int *input = i->input;
+  int *output = o->output;
+  // printf("t: i:%d o:%d\n", *input, *output);
+  *input += 1;
+  *output = *input;
+  if (*input <255) fsm_state_continue(s);
+  if (*input == 255) fsm_state_ok(s);
   return s;
 }
 
-MU_TEST(test_fsm) {
-  int ret = fsm_start("test", 5, &s1, &sd);
-  mu_assert(ret == 0, "fsm issue");
+MU_TEST(test_fsm_counter) {
+  // allocate input, output and state on the stack, then
+  // sanitize them using fsm_init() function.
+  input_t si;
+  output_t so;
+  state_t s;
+  fsm_init(&si, &so, &s);
+
+  // set input value
+  int data_input = 0;
+  si.input= &data_input;
+  si.input_length = sizeof(int);
+
+  // set output value
+  int output = 0;
+  so.output = &output;
+  so.output_length = sizeof(int);
+
+  // set the handler
+  fsm_state_handler(counter, &s);
+
+  // start the fsm
+  int ret = fsm_start(&si, &so, &s);
+
+  mu_assert(ret == 0, "fsm_start return code issue");
+  mu_assert(data_input == 255, "counter issue");
+  mu_assert(*(int *)si.input == 255, "input issue");
+  mu_assert(*(int *)so.output == 255, "output issue");
+  mu_assert(s.status == OK, "status issue");
 }
 
-MU_TEST_SUITE(test_fsm_suite) {
-  MU_RUN_TEST(test_fsm);
+MU_TEST_SUITE(test_fsm_counter_suite) {
+  MU_RUN_TEST(test_fsm_counter);
 }
 
 /*********************************************************************
- * DRAFT: mac address parsing use case
+ * fsm ping pong
  ********************************************************************/
-// an undefined input, usually checking the first character to parse
-// and then analysis the rest of the content until a valid separator
-// is found.
-struct state *mac_input_undefined(char, struct state*, struct state_data*);
-struct state mac_input_undefined_s = {
-  .name = "undefined",
-  .status = 0x0,
-  .handler_input = mac_input_undefined,
-};
+state_t *ping(input_t *, output_t *, state_t *);
+state_t *pong(input_t *, output_t *, state_t *);
 
-// an ieee input, supporting only dash separator: xx-xx-xx-xx-xx-xx
-struct state *mac_input_ieee(char, struct state*, struct state_data*);
-struct state mac_input_ieee_s = {
-  .name = "ieee",
-  .status = 0x0,
-  .handler_input = mac_input_undefined,
-};
+state_t *ping(input_t *i, output_t *o, state_t *s) {
+  printf("ping\n");
+  fsm_state_handler(pong, s);
+  fsm_state_continue(s);
+  return s;
+}
 
-// an ietf input, supporting only column separator: xx:xx:xx:xx:xx:xx
-struct state *mac_input_ietf(char, struct state*, struct state_data*);
-struct state mac_input_ietf_s = {
-  .name = "ietf",
-  .status = 0x0,
-  .handler_input = mac_input_undefined,
-};
+state_t *pong(input_t *i, output_t *o, state_t *s) {
+  printf("pong\n");
+  fsm_state_ok(s);
+  return s;
+}
 
-// a cisco input, supporting only dot separator: xxxx.xxxx.xxx
-struct state *mac_input_cisco(char, struct state*, struct state_data*);
-struct state mac_input_cisco_s = {
-  .name = "cisco",
-  .status = 0x0,
-  .handler_input = mac_input_undefined,
-};
+MU_TEST(test_fsm_pingpong) {
+  input_t si;
+  output_t so;
+  state_t s;
+  fsm_init(&si, &so, &s);
 
-// this is an example of a parser implementation using the fsm.
-//
-// the state_data should contain:
-//   - buffer for the mac address
-//   - position of the cursor
-struct state *mac_input_undefined(char c, struct state *s, struct state_data *sd) {
-  // not sure where the position should be defined, it can be in the state
-  // itself, or defined in the state data. if it's in the state data, everytime
-  // a char is given by the fsm, the handler must increment the position.
-  int position = s->position;
+  fsm_state_handler(ping, &s);
+  int ret = fsm_start(&si, &so, &s);
+  mu_assert(ret == 0, "fsm_start return code issue");
+  mu_assert(s.status == OK, "status issue");
+}
 
-  // the buffer containing the decoded mac_address
-  uint8_t *mac_address = sd->data->mac_address;
-
-  // the length of the buffer (it should be also compatible with eui64)
-  size_t *mac_address_length = sd->data->mac_address_length;
-
-  // check if the first char is a valid hex digit
-  if (position==0 && is_not_hex(c)) s->status=1;
-
-  // this is a dash. continue on ieee parser
-  if (is_sep_dash(c) && position==2) 
-    return mac_input_ieee;
-
-  // this is a column, continue on ietf parser
-  if (is_sep_column(c) && position==2)
-    return mac_input_ietf;
-
-  // this is a dot, continue on cisco parser
-  if (is_sep_dot(c) && position==5)
-    return mac_input_cisco;
-
-  // we are not sure if it's valid until no separator
-  // was found in the string, update the mac address
-  // buffer if everything looks good.
-  if (is_hex(c) && position>0 && position<5) {
-    return s;
-  }
+MU_TEST_SUITE(test_fsm_pingpong_suite) {
+  MU_RUN_TEST(test_fsm_pingpong);
 }
 
 /*********************************************************************
  * Main test suite.
  ********************************************************************/
 int main() {
-  MU_RUN_SUITE(test_fsm_suite);
+  MU_RUN_SUITE(test_fsm_counter_suite);
+  MU_RUN_SUITE(test_fsm_pingpong_suite);
   MU_REPORT();
   return MU_EXIT_CODE;
 }

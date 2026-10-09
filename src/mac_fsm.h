@@ -28,45 +28,48 @@
  *
  */
 
-// debugging flag to print information during fsm execution
-#define FSM_DEBUG 0x01
-#define FSM_TRACE 0x02
+// supported FSM state.
+enum fsm_status {
+  ERROR,
+  OK,
+  CONTINUE,
+};
 
-// data living alongside the state. It is mostly used to contain
-// the final parsed data for example, let consider it has the
-// "output" of the fsm
-typedef struct state_data {
-  void *data;
-  size_t length;
-} state_data;
+// FSM input structure.
+typedef struct __state_input {
+  void *input;
+  size_t input_length;
+} input_t;
 
-// exported state
-typedef struct state {
-  // a state can have a name to help identify it during
-  // code execution.
-  char *name;
+// FSM output structure.
+typedef struct __state_output {
+  void *output;
+  size_t output_length;
+} output_t;
 
-  // a state can be set with different information to help
-  // debugging it.
-  int debug;
+// FSM state.
+typedef struct __state {
+  enum fsm_status status;
+  char *message;
+  struct __state *(*handler)(input_t *, output_t *, struct __state *);
+  // struct __state *(*handler_enter)(output_t *, struct __state *);
+  // struct __state *(*handler_previous)(input_t *, output_t *, struct __state *);
+} state_t;
 
-  // a status is returned with its returned and checked
-  // by the fsm. If the the status is different than 0,
-  // then this is an error.
-  //   status<0: error
-  //   status==0: end
-  //   status==1: run
-  int status;
+// initializers
+int fsm_input_init(input_t *);
+int fsm_output_init(output_t *);
+int fsm_state_init(state_t *);
+int fsm_init(input_t *, output_t *, state_t *);
 
-  // the handler_enter function is executed when
-  // a transition occurs, S0 -> S1.handler_enter() -> S1
-  void (*handler_enter)(struct state*, struct state_data*);
+// state management
+void fsm_state_ok(state_t *);
+void fsm_state_continue(state_t *);
+void fsm_state_error(char *, state_t *);
+void fsm_state_handler(struct __state *(*handler)(input_t *, output_t *, struct __state *), state_t *);
 
-  // then handler_input function is executed when the
-  // state is set. S0.handler_input()
-  struct state *(*handler_input)(char, struct state*, struct state_data*);
-} state;
-
-// exported functions.
-int fsm_state_init(struct state *);
-int fsm_start(char *, size_t, struct state *, struct state_data *);
+// fsm main functions
+int fsm_init(input_t *, output_t *, state_t *);
+int fsm_check(input_t *, output_t *, state_t *);
+int fsm_loop(input_t *, output_t *, state_t *);
+int fsm_start(input_t *, output_t *, state_t *);
