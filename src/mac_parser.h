@@ -28,77 +28,29 @@
  *
  * ------------------------------------------------------------------
  *
- * MAC Randomizer headers.
+ * MAC Tokenizer and Parser headers.
  *
  */
-// define MAC EUI48 and EUI64
-#define MAC_EUI_48_SIZE 6
-#define MAC_EUI_64_SIZE 8
 
-// by default, EUI48 is used.
-#define MAC_SIZE MAC_EUI_48_SIZE
-
-// TODO: move that in parser headers
-// valid token separators: "-", ":", and "."
-#define MAC_TOKEN_SEPARATOR_DIGIT 0x01
-#define MAC_TOKEN_SEPARATOR_COLUMN 0x02
-#define MAC_TOKEN_SEPARATOR_DASH 0x03
-#define MAC_TOKEN_SEPARATOR_DOT 0x04
-
-// cleanup and initialize a mac address buffer
-int mac_init(uint8_t *);
-
-// generate random mac address
-int mac_random(uint8_t *);
-
-//
-int is_mac_broadcast(uint8_t *);
-
-//
-void mac_unicast_universal(uint8_t *);
-int is_mac_unicast_universal(uint8_t *);
-
-//
-void mac_unicast_local(uint8_t *);
-int is_mac_unicast_local(uint8_t *);
-
-//
-void mac_multicast_universal(uint8_t *);
-int is_mac_multicast_universal(uint8_t *);
-
-//
-void mac_multicast_local(uint8_t *);
-int is_mac_multicast_local(uint8_t *);
-
-//
-void mac_extended_local(uint8_t *);
-int is_mac_extended_local(uint8_t *);
-
-//
-void mac_standard_assigned(uint8_t *);
-int is_mac_standard_assigned(uint8_t *);
-
-//
-void mac_administratively_assigned(uint8_t *);
-int is_mac_administratively_assigned(uint8_t *);
-
-//
-void mac_reserved(uint8_t *);
-int is_mac_reserved(uint8_t *);
-
-// tooling and helper functions
-#define UNICAST_UNIVERSAL 0x00
-#define UNICAST_LOCAL 0x01
-#define MULTICAST_UNIVERSAL 0x02
-#define MULTICAST_LOCAL 0x03
-
-struct mac_info_s {
-  uint8_t type;
+// a mac token contains the position of the token
+// the type of token (digit or separator) and its
+// raw value
+struct token {
+  int position;
+  int type;
+  char value;
+  void *data;
+  size_t data_length; 
 };
 
-void mac_print(uint8_t *);
-int mac_info(uint8_t *, struct mac_info_s *);
+// tokenizer functions
+void mac_token(struct token*, int, int, char);
+int mac_tokenize(struct token*, int, char);
+void mac_token_print(struct token *);
 
-// extra headers
-#include "mac_fsm.h"
-#include "mac_parser.h"
+// parser functions
+int mac_parse(uint8_t *, char *, size_t);
+
+// helper
+uint8_t char_to_uint8(char);
+int nibble_to_uint8(uint8_t, uint8_t *);

@@ -31,6 +31,7 @@
 #include <stdlib.h>
 #include "minunit.h"
 #include "mac.h"
+#include "mac_test_helper.h"
 
 /*********************************************************************
  * fsm counter
@@ -38,7 +39,6 @@
 state_t *counter(input_t *i, output_t *o, state_t *s) {
   int *input = i->input;
   int *output = o->output;
-  // printf("t: i:%d o:%d\n", *input, *output);
   *input += 1;
   *output = *input;
   if (*input <255) fsm_state_continue(s);
@@ -88,14 +88,14 @@ state_t *ping(input_t *, output_t *, state_t *);
 state_t *pong(input_t *, output_t *, state_t *);
 
 state_t *ping(input_t *i, output_t *o, state_t *s) {
-  printf("ping\n");
+  _debug("%s", "ping");
   fsm_state_handler(pong, s);
   fsm_state_continue(s);
   return s;
 }
 
 state_t *pong(input_t *i, output_t *o, state_t *s) {
-  printf("pong\n");
+  _debug("%s", "pong");
   fsm_state_ok(s);
   return s;
 }
@@ -130,12 +130,12 @@ state_t *tokenizer(input_t *i, output_t *o, state_t *s) {
   // dereference input
   size_t string_length = i->input_length;
   char *string = i->input;
-  printf("%s %zu\n", string, string_length);
+  _debug("%s %zu\n", string, string_length);
 
   // derefrence output
   // size_t output_length = o->output_length;
   struct output *output = o->output;
-  printf("%d\n", output->position);
+  _debug("%d\n", output->position);
 
   // increment the position of the cursor
   output->position = output->position+1;

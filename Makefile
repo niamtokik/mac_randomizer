@@ -29,11 +29,13 @@ OBJECT_TARGETS = mac_common \
 								 mac_randomizer \
 								 mac_parser \
 								 mac_identifier \
-								 mac_fsm
+								 mac_fsm \
+								 mac_test_helper
 
 # targets to build the unit tests
 TEST_TARGETS = mac_test \
-							 mac_fsm_test
+							 mac_fsm_test \
+							 mac_parser_test
 
 # template to generate C objects
 define object_builder
@@ -106,16 +108,18 @@ static-analysis:
 
 .PHONY += test
 test: $(TESTS)
-	$(BUILD_DIR)/mac_test
-	$(BUILD_DIR)/mac_fsm_test
+	@for t in $(TESTS); do \
+		echo "[TEST] $${t}"; \
+		./$${t}; done
 
 .PHONY += debug
 debug: $(BUILD_DIR)/mac_debug
 
 .PHONY += test-debug
 test-debug: $(TESTS_DEBUG)
-	$(BUILD_DIR)/mac_test_debug
-	$(BUILD_DIR)/mac_fsm_test_debug
+	@for t in $(TESTS_DEBUG); do \
+		echo "[TEST] $${t}"; \
+		./$${t}; done
 
 .PHONY += clean-debug
 clean-debug:

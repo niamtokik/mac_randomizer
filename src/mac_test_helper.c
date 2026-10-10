@@ -28,77 +28,30 @@
  *
  * ------------------------------------------------------------------
  *
- * MAC Randomizer headers.
- *
  */
-// define MAC EUI48 and EUI64
-#define MAC_EUI_48_SIZE 6
-#define MAC_EUI_64_SIZE 8
+#include<stdio.h>
+#include<stdlib.h>
+#include<stdarg.h>
+#include "mac.h"
+#include "mac_test_helper.h"
 
-// by default, EUI48 is used.
-#define MAC_SIZE MAC_EUI_48_SIZE
+// simple debug function.
+void _debug(const char * format, ...) {
+  if (getenv("DEBUG")) {
+    va_list ap;
+    fprintf(stderr, "debug: ");
+    va_start(ap, format);
+#pragma GCC diagnostic ignored "-Wformat-nonliteral"
+    vfprintf(stderr, format, ap);
+    va_end(ap);
+    fprintf(stderr, "\n");
+  }
+}
 
-// TODO: move that in parser headers
-// valid token separators: "-", ":", and "."
-#define MAC_TOKEN_SEPARATOR_DIGIT 0x01
-#define MAC_TOKEN_SEPARATOR_COLUMN 0x02
-#define MAC_TOKEN_SEPARATOR_DASH 0x03
-#define MAC_TOKEN_SEPARATOR_DOT 0x04
-
-// cleanup and initialize a mac address buffer
-int mac_init(uint8_t *);
-
-// generate random mac address
-int mac_random(uint8_t *);
-
-//
-int is_mac_broadcast(uint8_t *);
-
-//
-void mac_unicast_universal(uint8_t *);
-int is_mac_unicast_universal(uint8_t *);
-
-//
-void mac_unicast_local(uint8_t *);
-int is_mac_unicast_local(uint8_t *);
-
-//
-void mac_multicast_universal(uint8_t *);
-int is_mac_multicast_universal(uint8_t *);
-
-//
-void mac_multicast_local(uint8_t *);
-int is_mac_multicast_local(uint8_t *);
-
-//
-void mac_extended_local(uint8_t *);
-int is_mac_extended_local(uint8_t *);
-
-//
-void mac_standard_assigned(uint8_t *);
-int is_mac_standard_assigned(uint8_t *);
-
-//
-void mac_administratively_assigned(uint8_t *);
-int is_mac_administratively_assigned(uint8_t *);
-
-//
-void mac_reserved(uint8_t *);
-int is_mac_reserved(uint8_t *);
-
-// tooling and helper functions
-#define UNICAST_UNIVERSAL 0x00
-#define UNICAST_LOCAL 0x01
-#define MULTICAST_UNIVERSAL 0x02
-#define MULTICAST_LOCAL 0x03
-
-struct mac_info_s {
-  uint8_t type;
-};
-
-void mac_print(uint8_t *);
-int mac_info(uint8_t *, struct mac_info_s *);
-
-// extra headers
-#include "mac_fsm.h"
-#include "mac_parser.h"
+// helper function to print mac address if DEBUG flag is set.
+// TODO: add support for EUI64.
+void _mac_print(uint8_t *mac_address){
+  _debug("mac_address: %02x:%02x:%02x:%02x:%02x:%02x\n",
+    mac_address[0], mac_address[1], mac_address[2],
+    mac_address[3], mac_address[4], mac_address[5]);
+}

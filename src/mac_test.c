@@ -35,12 +35,7 @@
 #include <stdlib.h>
 #include "minunit.h"
 #include "mac.h"
-
-// helper function to print mac address if DEBUG flag is set.
-void _mac_print(uint8_t *mac_address){
-  if (getenv("DEBUG"))
-    mac_print(mac_address);
-}
+#include "mac_test_helper.h"
 
 /*********************************************************************
  * initialization function test.
@@ -246,80 +241,6 @@ MU_TEST_SUITE(test_mac_address_ieee_802c_suite) {
   MU_RUN_TEST(test_mac_address_ieee_802c);
 }
 
-/*
- *
- */
-MU_TEST(test_mac_parser) {
-  int ret = 0;
-  char *string = "ff:ff:ff:ff:ff:ff";
-  uint8_t mac_address[MAC_SIZE];
-
-  mac_init(mac_address);
-  ret = mac_parse(mac_address, string, 17);
-  _mac_print(mac_address);
-  mu_assert(ret == 0, "broadcast address parsing issue");
-  for (int i=0; i<MAC_SIZE; i++) mu_assert(mac_address[i] == 0xff, "broadcast address");
-
-  ret = 0;
-  char *string2 = "00:00:00:00:00:00";
-  mac_init(mac_address);
-  ret = mac_parse(mac_address, string2, 17);
-  _mac_print(mac_address);
-  mu_assert(ret == 0, "null address parsing issue");
-  for (int i=0; i<MAC_SIZE; i++) mu_assert(mac_address[i] == 0x00, "null address");
-
-  // "random" valid lower case mac address
-  ret = 0;
-  char *string3 = "12:34:56:78:9a:bc";
-  mac_init(mac_address);
-  ret = mac_parse(mac_address, string3, 17);
-  _mac_print(mac_address);
-  mu_assert(ret == 0, "random valid lowercase address parsing issue");
-
-  // "random" valid uppercase mac address
-  ret = 0;
-  char *string4 = "12:34:56:78:9A:BC";
-  mac_init(mac_address);
-  ret = mac_parse(mac_address, string4, 17);
-  _mac_print(mac_address);
-  mu_assert(ret == 0, "random valid uppercase address parsing issue");
-
-  // "random" valid mixed mac address
-  ret = 0;
-  char *string5 = "12:34:56:78:9a:Bc";
-  mac_init(mac_address);
-  ret = mac_parse(mac_address, string5, 17);
-  _mac_print(mac_address);
-  mu_assert(ret == 0, "random valid mixed address parsing issue");
-
-  // "random" valid mac address
-  // ret = 0;
-  // char *string7 = "1234.5678.9aBc";
-  // mac_init(mac_address);
-  // ret = mac_parse(mac_address, string7, 17);
-  // mac_print(mac_address);
-  // mu_assert(ret == 0, "random address parsing issue");
-
-  // starting with invalid char
-  // a mac address can't start a space
-  // ret = -1;
-  // char *invalid_string1 = " ff:ff:ff:ff:ff:ff";
-
-  // starting with invalid char
-  // a mac address can't start with a column
-  // ret = -1;
-  // char *invalid_string1 = ":ff:ff:ff:ff:ff:ff";
-
-  // starting with invalid char
-  // a mac address can't start with a dash
-  // ret = -1;
-  // char *invalid_string1 = "-ff-ff-ff-ff-ff-ff";
-}
-
-MU_TEST_SUITE(test_mac_parser_suite) {
-  MU_RUN_TEST(test_mac_parser);
-}
-
 /*********************************************************************
  * mac information
  ********************************************************************/
@@ -351,8 +272,6 @@ int main() {
   // ieee802c extension
   MU_RUN_SUITE(test_mac_address_ieee_802c_suite);
 
-  // parser
-  MU_RUN_SUITE(test_mac_parser_suite);
 
   // info
   MU_RUN_SUITE(test_mac_address_info_suite);

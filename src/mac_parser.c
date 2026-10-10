@@ -38,21 +38,6 @@
 #include <strings.h>
 #include "mac.h"
 
-// TODO: identify the format
-// #define MAC_FORMAT_IEEE_802 0x01
-// #define MAC_FORMAT_
-
-// a mac token contains the position of the token
-// the type of token (digit or separator) and its
-// raw value
-struct token {
-  int position;
-  int type;
-  char value;
-  void *data;
-  size_t data_length; 
-};
-
 // TODO: a safer approach is to create a struct
 // containing the length of the valid tokens
 // stored. every new valid token increases the length
@@ -161,6 +146,16 @@ uint8_t char_to_uint8(char c) {
     case 'F': return 0xf;
     default: return 255;
   }
+}
+
+// A function to shift to the left an uint8_t, and
+// replace the right part with a nibble (4bits). 
+int nibble_to_uint8(uint8_t nibble, uint8_t *dst) {
+  if (nibble>0xf) return -1;
+  if (nibble<0x0) return -1;
+  *dst <<= 4;
+  *dst |= nibble;
+  return 0;
 }
 
 // this is the main parser, at this time, this is a naive
