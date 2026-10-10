@@ -37,6 +37,12 @@
  * their own handlers. In some situation though (e.g. parsing a string),
  * using one state should be enough.
  *
+ * TODO: the status of the computation must be enforced by the user
+ *       to ensure the data returned has been checked. Then, the
+ *       fsm must set the status to UNDEFINED after the returned
+ *       value. If in the next computation, the value is still to
+ *       UNDEFINED, it means the computation missed something.
+ *
  * TODO: add in the documentation.
  *
  * TODO: add handler_init to be called when the fsm_start function
