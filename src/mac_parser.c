@@ -148,6 +148,35 @@ uint8_t char_to_uint8(char c) {
   }
 }
 
+int char_to_uint8n(char c, uint8_t *dst) {
+  switch(c) {
+    case '0': *dst = 0; break;
+    case '1': *dst = 0x1; break;
+    case '2': *dst = 0x2; break;
+    case '3': *dst = 0x3; break;
+    case '4': *dst = 0x4; break;
+    case '5': *dst = 0x5; break;
+    case '6': *dst = 0x6; break;
+    case '7': *dst = 0x7; break;
+    case '8': *dst = 0x8; break;
+    case '9': *dst = 0x9; break;
+    case 'a': *dst = 0xa; break;
+    case 'b': *dst = 0xb; break;
+    case 'c': *dst = 0xc; break;
+    case 'd': *dst = 0xd; break;
+    case 'e': *dst = 0xe; break;
+    case 'f': *dst = 0xf; break;
+    case 'A': *dst = 0xa; break;
+    case 'B': *dst = 0xb; break;
+    case 'C': *dst = 0xc; break;
+    case 'D': *dst = 0xd; break;
+    case 'E': *dst = 0xe; break;
+    case 'F': *dst = 0xf; break;
+    default: return -1;
+  }
+  return 1;
+}
+
 // A function to shift to the left an uint8_t, and
 // replace the right part with a nibble (4bits). 
 int nibble_to_uint8(uint8_t nibble, uint8_t *dst) {
@@ -207,5 +236,19 @@ int mac_parse(uint8_t *mac_address, char *string, size_t string_len) {
   if (mac_parser(mac_address, tokens, string_len)<0)
     return -1;
 
+  return 0;
+}
+
+int is_char_digit(char c) {
+  if (c>='0' && c<='9') return 1;
+  if (c>='a' && c<='f') return 1;
+  if (c>= 'A' && c <= 'F') return 1;
+  return 0;
+}
+
+int is_char_separator(char c) {
+  char sep[3] = {':', '-', '.'};
+  for (int i=0; i<3; i++)
+    if (c == sep[i]) return 1;
   return 0;
 }

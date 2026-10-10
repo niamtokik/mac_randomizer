@@ -100,5 +100,6 @@ void mac_print(uint8_t *);
 int mac_info(uint8_t *, struct mac_info_s *);
 
 // extra headers
+#include "mac_converter.h"
 #include "mac_fsm.h"
 #include "mac_parser.h"

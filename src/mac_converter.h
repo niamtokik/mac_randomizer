@@ -1,9 +1,4 @@
-/* Copyright 2026 Mathieu Kerjouan
- * 
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *
- * 1. Redistributions of source code must retain the above copyright notice,
+/*
  * this list of conditions and the following disclaimer.
  *
  * 2. Redistributions in binary form must reproduce the above copyright notice,
@@ -28,33 +23,4 @@
  *
  * ------------------------------------------------------------------
  *
- * MAC Tokenizer and Parser headers.
- *
  */
-
-// a mac token contains the position of the token
-// the type of token (digit or separator) and its
-// raw value
-struct token {
-  int position;
-  int type;
-  char value;
-  void *data;
-  size_t data_length; 
-};
-
-// tokenizer functions
-void mac_token(struct token*, int, int, char);
-int mac_tokenize(struct token*, int, char);
-void mac_token_print(struct token *);
-
-// parser functions
-int mac_parse(uint8_t *, char *, size_t);
-
-// helper
-uint8_t char_to_uint8(char);
-int char_to_uint8n(char, uint8_t *);
-
-int nibble_to_uint8(uint8_t, uint8_t *);
-int is_char_digit(char);
-int is_char_separator(char);

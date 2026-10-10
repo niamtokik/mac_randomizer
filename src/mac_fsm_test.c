@@ -145,6 +145,52 @@ state_t *tokenizer(input_t *i, output_t *o, state_t *s) {
   return s;
 }
 
+// tokenizer (decoder) procedure
+// -----------------------------
+//
+// 1. read char from input
+// 2. increment input cursor (if any)
+// 3. check if the character is valid
+// 4. creates a new token containing the raw value and
+//    the binary value (for digit only)
+// 5. returns the token list
+// state_t *tokenizer2(input_t *i, output_t *o, state_t *s) { }
+
+// parser (decoder) procedure
+// --------------------------
+//
+// undefined-1. read token from input (previously created via the tokenizer
+// undefined-2. check if the first token is valid (must be a digit)
+// undefined-3. check if the second token is valid (must be a digit)
+// undefined-4. check if the third token is valid
+// undefined-4.1. if token is a separator (":"), it's IETF format
+// undefined-4.2. if token is a separator ("-") it's IEEEformat
+// undefined-4.3. if token is a digit, it's probably a cisco format, but
+//                we are not sure yet
+// undefined-4. check if the fourth token is a digit
+// undefined-5. check if the fifth token is a separator ("."),
+//              then this is a cisco format
+//
+// ieee-1. check if the digits are correctly separated by ("-").
+//         group of 2 digits.
+//         max size 17 characters (EUI48), 23 chars (EUI64)
+//
+// ietf-1. check if the digits are correctly separated by (":").
+//         group of 2 digits.
+//         max size 17 characters (EUI48), 23 chars (EUI64)
+//
+// cisco-1. check if the digits are correctly separated by (".").
+//          group of 4 digits.
+//          max size 16 characters (EUI48), 19 chars (EUI64)
+//
+// state t* mac_undefined(input_t *i, output_t *o, state_t *) {}
+
+// parser (encoder) procedure
+// --------------------------
+//
+// required: format desired (e.g. cisco, ieee, or ietf)
+//           type of mac address (e.g. eui48 or eui64)
+
 MU_TEST(test_fsm_tokenizer) {
   input_t si;
   output_t so;

@@ -30,6 +30,7 @@ OBJECT_TARGETS = mac_common \
 								 mac_parser \
 								 mac_identifier \
 								 mac_fsm \
+								 mac_converter \
 								 mac_test_helper
 
 # targets to build the unit tests

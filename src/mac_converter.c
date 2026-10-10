@@ -28,33 +28,17 @@
  *
  * ------------------------------------------------------------------
  *
- * MAC Tokenizer and Parser headers.
- *
  */
+#include <stdio.h>
+#include <stdlib.h>
+#include "mac.h"
 
-// a mac token contains the position of the token
-// the type of token (digit or separator) and its
-// raw value
-struct token {
-  int position;
-  int type;
-  char value;
-  void *data;
-  size_t data_length; 
-};
+// TODO:
+// convert a mac address encoding in ascii into binary format
+// int mac_address_to_binary(char *string, size_t slen, uint8_t *bin, size_t blen) {}
 
-// tokenizer functions
-void mac_token(struct token*, int, int, char);
-int mac_tokenize(struct token*, int, char);
-void mac_token_print(struct token *);
+// TODO:
+// convert a binary like mac address into encoded ascii mac address
+// int binary_to_mac_address(uint8_t *bin, size_t blen, char *string, size_t slen) {}
 
-// parser functions
-int mac_parse(uint8_t *, char *, size_t);
 
-// helper
-uint8_t char_to_uint8(char);
-int char_to_uint8n(char, uint8_t *);
-
-int nibble_to_uint8(uint8_t, uint8_t *);
-int is_char_digit(char);
-int is_char_separator(char);
