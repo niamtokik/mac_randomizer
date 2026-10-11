@@ -120,7 +120,7 @@ MU_TEST_SUITE(test_fsm_pingpong_suite) {
 // should be used to initialize the data, invoked with fsm_state()
 // function.
 state_t *tokenizer_init(input_t *i, output_t *o, state_t *s) {
-  return fsm_state_ok(s);
+  return fsm_state_continue(s);
 }
 
 // main handler called to parse every
@@ -128,25 +128,25 @@ state_t *tokenizer(input_t *i, output_t *o, state_t *s) {
   // dereference input
   size_t string_length = i->input_length;
   char *string = i->input;
-  _debug("input_length:%zu, input(value):%s", string_length, string);
+  _debug("input_length:'%zu', input(value):'%s'", string_length, string);
 
   // derefrence output
   size_t output_length = o->output_length;
   uint8_t *mac_address = o->output;
-  _debug("output_length:%d, output(address):%p", output_length, mac_address);
+  _debug("output_length:'%d', output(address):'%p'", output_length, mac_address);
 
   // dereferece data from state
   int *position = s->data;
   _debug("position:%d", *position);
 
   // just for debugging purpose
-  _debug("string_char:%c", string[*position]);
-  _debug("output_data:%x", mac_address[*position]);
+  _debug("string_char:'%c'", string[*position]);
+  _debug("output_data:'%x'", mac_address[*position]);
 
   // NOTE: in fact, we can easily check every position with
   // a switch/case. But I don't want something "smart", i want
   // something stupid that can be understood by anybody.
-  if (*position>16)
+  if (*position>string_length)
     return fsm_state_error("overflow", s);
 
   if (*position==0 && ! is_char_digit(string[*position]))
@@ -169,15 +169,14 @@ state_t *tokenizer(input_t *i, output_t *o, state_t *s) {
 
   // just stop the computation here for now
   if (is_char_digit(string[*position])) {
-    // uint8t nibble = 0;
-    // char_to_uint8n(string[*position], &nibble);
-    // nibble_to_uint8(nibble, mac_address[*position]);
-    *position += 1;
-    return fsm_state_ok(s);
+    _debug("digit found: %c", string[*position]);
+    // uint8_t nibble = 0x00;
+    // char_to_uint8n(string[*position/2], &nibble);
+    //nibble_to_uint8(nibble, &mac_address[*position]);
   }
 
-  // should never reach this part.
-  return fsm_state_error("should not be there", s);
+  *position += 1;
+  return fsm_state_continue(s);
 }
 
 MU_TEST(test_fsm_tokenizer) {
