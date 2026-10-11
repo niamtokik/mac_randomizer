@@ -123,8 +123,15 @@ state_t *tokenizer_init(input_t *i, output_t *o, state_t *s) {
   return fsm_state_continue(s);
 }
 
+struct data {
+  int input_cursor;
+  int output_cursor;
+};
+
 // main handler called to parse every
 state_t *tokenizer(input_t *i, output_t *o, state_t *s) {
+  _debug("--- fsm computation ---");
+
   // dereference input
   size_t string_length = i->input_length;
   char *string = i->input;
@@ -136,12 +143,16 @@ state_t *tokenizer(input_t *i, output_t *o, state_t *s) {
   _debug("output_length:'%d', output(address):'%p'", output_length, mac_address);
 
   // dereferece data from state
-  int *position = s->data;
-  _debug("position:%d", *position);
+  struct data *data = s->data;
+  int *position = &data->input_cursor;
+  int *output_cursor = &data->output_cursor;
+  _debug("input_cursor::%d", *position);
+  _debug("output_cursor:%d", *output_cursor);
 
   // just for debugging purpose
   _debug("string_char:'%c'", string[*position]);
   _debug("output_data:'%x'", mac_address[*position]);
+  _mac_print(mac_address);
 
   // NOTE: in fact, we can easily check every position with
   // a switch/case. But I don't want something "smart", i want
@@ -151,6 +162,14 @@ state_t *tokenizer(input_t *i, output_t *o, state_t *s) {
 
   if (*position==0 && ! is_char_digit(string[*position]))
     return fsm_state_error("bad starting char (0)", s);
+
+  if (*position==16 && is_char_digit(string[*position])) {
+    _debug("digit found (final): %c", string[*position]);
+    uint8_t nibble = 0x00;
+    char_to_uint8n(string[*position], &nibble);
+    nibble_to_uint8(nibble, &mac_address[*output_cursor/2]);
+    return fsm_state_ok(s);
+  }
 
   if (*position==2 && ! is_char_separator(string[*position]))
     return fsm_state_error("not a separator", s);
@@ -170,9 +189,10 @@ state_t *tokenizer(input_t *i, output_t *o, state_t *s) {
   // just stop the computation here for now
   if (is_char_digit(string[*position])) {
     _debug("digit found: %c", string[*position]);
-    // uint8_t nibble = 0x00;
-    // char_to_uint8n(string[*position/2], &nibble);
-    //nibble_to_uint8(nibble, &mac_address[*position]);
+    uint8_t nibble = 0x00;
+    char_to_uint8n(string[*position], &nibble);
+    nibble_to_uint8(nibble, &mac_address[*output_cursor/2]);
+    *output_cursor += 1;
   }
 
   *position += 1;
@@ -194,13 +214,17 @@ MU_TEST(test_fsm_tokenizer) {
 
   // configure the output
   uint8_t mac_address[6];
+  bzero(mac_address, sizeof(uint8_t)*6);
   so.output = mac_address;
   so.output_length = sizeof(uint8_t)*6;
 
   // configure the state
-  int position = 0;
-  s.data = &position;
-  s.data_length = sizeof(int);
+  struct data data = {
+    .input_cursor = 0,
+    .output_cursor = 0,
+  };
+  s.data = &data;
+  s.data_length = sizeof(struct data);
   fsm_state_handler(tokenizer, &s);
 
   // start the tokenizer
@@ -208,6 +232,15 @@ MU_TEST(test_fsm_tokenizer) {
   _debug("message: %s", s.message);
   mu_assert(ret == 0, "ret issue");
   mu_assert(s.message == NULL, "message should not be set");
+
+  uint8_t *out = so.output;
+  _mac_print(out);
+  mu_assert(out[0] == 0x01, "mac parser error (0)");
+  mu_assert(out[1] == 0x23, "mac parser error (1)");
+  mu_assert(out[2] == 0x45, "mac parser error (2)");
+  mu_assert(out[3] == 0x67, "mac parser error (3)");
+  mu_assert(out[4] == 0x89, "mac parser error (4)");
+  mu_assert(out[5] == 0xab, "mac parser error (5)");
 }
 
 MU_TEST_SUITE(test_fsm_tokenizer_suite) {
