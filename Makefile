@@ -60,6 +60,18 @@ $$(BUILD_DIR)/$(1)_debug: $$(OBJECTS_DEBUG)
 	cc $$(CC_FLAGS_DEBUG) $$(OBJECTS_DEBUG) $$(SRC_DIR)/$(1).c -o $$(@)
 endef
 
+# TODO: improve the analyzer template
+# template to generate analyzer output files
+define analyzer_builder
+ANALYSIS_FILES += $$(BUILD_DIR)/$(1).plist
+$$(BUILD_DIR)/$(1).plist:
+	clang-21 $(SRC_DIR)/$(1).c -o $$(@) --analyze \
+		-Xclang \
+		-analyzer-config \
+		-Xclang \
+			mode=shallow,unroll-loops=true,serialize-stats=true,verbose-report-filename=true,cfg-scopes=true
+endef
+
 ######################################################################
 # help target.
 ######################################################################
@@ -86,6 +98,12 @@ $(foreach test,$(TEST_TARGETS), \
 	$(eval $(call test_builder,$(test))))
 
 ######################################################################
+# analyzer output
+######################################################################
+$(foreach target,$(OBJECT_TARGETS), \
+	$(eval $(call analyzer_builder,$(target))))
+
+######################################################################
 # main mac address randomizer cli application.
 ######################################################################
 $(BUILD_DIR)/mac: $(OBJECTS)
@@ -106,6 +124,9 @@ auto: clean all test
 .PHONY += static-analysis
 static-analysis:
 	$(CLANG_CHECK) $(SRC_DIR)/*.c
+
+.PHONY += analyze
+analyze: $(ANALYSIS_FILES)
 
 .PHONY += test
 test: $(TESTS)
@@ -131,5 +152,7 @@ clean: clean-debug
 	-rm $(OBJECTS)
 	-rm $(BUILD_DIR)/mac
 	-rm $(TESTS)
+	-rm $(TESTS_DEBUG)
+	-rm $(ANALYSIS_FILES)
 
 .PHONY: $(.PHONY)
