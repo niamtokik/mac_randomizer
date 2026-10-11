@@ -38,13 +38,6 @@
 // by default, EUI48 is used.
 #define MAC_SIZE MAC_EUI_48_SIZE
 
-// TODO: move that in parser headers
-// valid token separators: "-", ":", and "."
-#define MAC_TOKEN_SEPARATOR_DIGIT 0x01
-#define MAC_TOKEN_SEPARATOR_COLUMN 0x02
-#define MAC_TOKEN_SEPARATOR_DASH 0x03
-#define MAC_TOKEN_SEPARATOR_DOT 0x04
-
 // cleanup and initialize a mac address buffer
 int mac_init(uint8_t *);
 

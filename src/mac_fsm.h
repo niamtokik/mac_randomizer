@@ -56,7 +56,7 @@ typedef struct __state {
   enum fsm_status status;
   char *message;
   struct __state *(*handler)(input_t *, output_t *, struct __state *);
-  // struct __state *(*handler_enter)(output_t *, struct __state *);
+  // void (*handler_enter)(output_t *, struct __state *);
   // struct __state *(*handler_previous)(input_t *, output_t *, struct __state *);
 } state_t;
 
@@ -76,4 +76,4 @@ void fsm_state_handler(struct __state *(*handler)(input_t *, output_t *, struct 
 int fsm_init(input_t *, output_t *, state_t *);
 int fsm_check(input_t *, output_t *, state_t *);
 int fsm_loop(input_t *, output_t *, state_t *);
-int fsm_start(input_t *, output_t *, state_t *);
+int fsm_start(state_t *(*init_callback)(input_t *, output_t *, state_t *), input_t *, output_t *, state_t *);

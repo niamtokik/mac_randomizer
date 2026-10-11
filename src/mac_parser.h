@@ -32,6 +32,13 @@
  *
  */
 
+// TODO: move that in parser headers
+// valid token separators: "-", ":", and "."
+#define MAC_TOKEN_DIGIT 0x01
+#define MAC_TOKEN_COLUMN 0x02
+#define MAC_TOKEN_DASH 0x03
+#define MAC_TOKEN_DOT 0x04
+
 // a mac token contains the position of the token
 // the type of token (digit or separator) and its
 // raw value

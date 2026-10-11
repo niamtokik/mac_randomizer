@@ -67,37 +67,37 @@ int mac_tokenize(struct token *tokens, int position, char c) {
 
   // valid token: digit
   if (c>='0' && c<='9') {
-    mac_token(&token, position, MAC_TOKEN_SEPARATOR_DIGIT, c);
+    mac_token(&token, position, MAC_TOKEN_DIGIT, c);
     goto valid_token;
   }
   
   // valid token: hex digit
   if (c>='a' && c<='f') {
-    mac_token(&token, position, MAC_TOKEN_SEPARATOR_DIGIT, c);
+    mac_token(&token, position, MAC_TOKEN_DIGIT, c);
     goto valid_token;
   }
   
   // valid token: hex digit
   if (c>= 'A' && c <= 'F') {
-    mac_token(&token, position, MAC_TOKEN_SEPARATOR_DIGIT, c);
+    mac_token(&token, position, MAC_TOKEN_DIGIT, c);
     goto valid_token;
   }
 
   // valid token: separator
   if (c==':') {
-    mac_token(&token, position, MAC_TOKEN_SEPARATOR_COLUMN, c);
+    mac_token(&token, position, MAC_TOKEN_COLUMN, c);
     goto valid_token;
   }
 
   // valid token: separator
   if (c=='-') {
-    mac_token(&token, position, MAC_TOKEN_SEPARATOR_DASH, c);
+    mac_token(&token, position, MAC_TOKEN_DASH, c);
     goto valid_token;
   }
 
   // valid token: separator
   if (c=='.') {
-    mac_token(&token, position, MAC_TOKEN_SEPARATOR_DOT, c);
+    mac_token(&token, position, MAC_TOKEN_DOT, c);
     goto valid_token;
   }
 
@@ -202,12 +202,12 @@ int mac_parser(uint8_t *mac_address, struct token *tokens, size_t length) {
   for (i=0; i<length; i++) {
     (void)buffer;
 
-    if (i==0 && tokens[i].type != MAC_TOKEN_SEPARATOR_DIGIT) {
+    if (i==0 && tokens[i].type != MAC_TOKEN_DIGIT) {
       printf("error: mac address starting with a separator at position %d\n", i);
       return -1;
     }
 
-    if (tokens[i].type == MAC_TOKEN_SEPARATOR_DIGIT) {
+    if (tokens[i].type == MAC_TOKEN_DIGIT) {
       buffer <<= 4;
       buffer |= char_to_uint8(tokens[i].value);
       if (counter%2) {

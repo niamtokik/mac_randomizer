@@ -4,7 +4,10 @@
 this time of writing, this tool is planned to run only on OpenBSD.
 
 **WARNING**: this is a pet project, you should probably not use it
-in production.
+in production. The goal is to experiment with new compiler features,
+and tools to make easier/safer C implementation. It will also cover
+C finite state machine implementation (moore and mealy based). This
+project is in active development.
 
 ## Usage
 

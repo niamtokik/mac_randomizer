@@ -68,7 +68,7 @@ MU_TEST(test_fsm_counter) {
   fsm_state_handler(counter, &s);
 
   // start the fsm
-  int ret = fsm_start(&si, &so, &s);
+  int ret = fsm_loop(&si, &so, &s);
 
   mu_assert(ret == 0, "fsm_start return code issue");
   mu_assert(data_input == 255, "counter issue");
@@ -107,7 +107,7 @@ MU_TEST(test_fsm_pingpong) {
   fsm_init(&si, &so, &s);
 
   fsm_state_handler(ping, &s);
-  int ret = fsm_start(&si, &so, &s);
+  int ret = fsm_loop(&si, &so, &s);
   mu_assert(ret == 0, "fsm_start return code issue");
   mu_assert(s.status == OK, "status issue");
 }
@@ -141,6 +141,56 @@ state_t *tokenizer(input_t *i, output_t *o, state_t *s) {
   output->position = output->position+1;
 
   // return ok for now, this is not a loop, this is just design test
+  fsm_state_ok(s);
+  return s;
+}
+
+struct tokenizer_output {
+  // the position of the input cursor;
+  int cursor_position;
+
+  // a mac address can't be greater than 23 bytes,
+  //   eui48-min: 16 bytes (cisco)
+  //   eui64-max: 23 bytes (ieee/ietf)
+  // if greater than this value, it should fail.
+  struct token tokens[23];
+};
+
+// The first function to be called when starting
+// the fsm
+// state_t *tokenizer_handler_init(input_t *i, output_t *o, state_t *s) { }
+
+// TODO: this is a draft.
+// In this tokenizer, only the authorized alphabets (tokens)
+// are generated. The syntax is not checked yet.
+state_t *tokenizer_handler(input_t *i, output_t *o, state_t *s) {
+  // derefrence output
+  // size_t output_length = o->output_length;
+  struct tokenizer_output *to = o->output;
+  struct token *token_output = &to->tokens[to->cursor_position];
+  _debug("%d\n", to->cursor_position);
+
+  if (to->cursor_position>23) {
+    fsm_state_error("can't be greater than 23 bytes", s);
+    return s;
+  }
+
+  // dereference input
+  size_t string_length = i->input_length;
+  char *string = i->input;
+  char *c = &string[to->cursor_position];
+  _debug("%c %zu\n", *c, string_length);
+
+  // check if it's a digit
+  if (is_char_digit(*c)) {
+    struct token token;
+    mac_token(&token, to->cursor_position, MAC_TOKEN_DIGIT, *c);
+    memcpy(token_output, &token, sizeof(struct token));
+  }
+
+  to->cursor_position += 1;
+
+  // just stop for now
   fsm_state_ok(s);
   return s;
 }
@@ -215,7 +265,7 @@ MU_TEST(test_fsm_tokenizer) {
 
   // start the tokenizer
   fsm_state_handler(tokenizer, &s);
-  int ret = fsm_start(&si, &so, &s);
+  int ret = fsm_loop(&si, &so, &s);
   mu_assert(ret == 0, "ret issue");
 }
 

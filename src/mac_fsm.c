@@ -170,14 +170,48 @@ int fsm_check(input_t *i, output_t *o, state_t *s) {
  */
 int fsm_loop(input_t *i, output_t *o, state_t *s) {
   for (;;) {
+
+    // check if the struct to be used is valid.
     if (fsm_check(i, o, s) <0) return -1; 
+
+    // execute the handler present in the state_t data structure,
+    // it should return a valid struct.
     state_t *ret_state = s->handler(i, o, s);
     if (fsm_check(i, o, s) <0) return -1; 
-    if (ret_state->status == ERROR) return -1;
-    if (ret_state->status == OK) return 0;
-    if (ret_state->status == CONTINUE) {
+
+    // TODO: if the returned struct is different than the one we
+    // currently use, it means this is a state transition. In this
+    // case, if the handler_enter callback function is defined,
+    // the status of the structure must be set to ENTER and then
+    // the handler_enter callback must be called. The ENTER status
+    // MUST NOT alter the state_t data structure.
+    //   if (ret_state->status == ENTER
+    //     ...
+
+    // TODO: if the state returned is unknown, it means the user never
+    // set a valid state after the computation, it should be
+    // treated as an error (unkonwn state).
+    // if (ret_state->status == UNKNOWN)
+    //   return -1;
+
+    // the user state the finite state machine to error, it
+    // means something bad happened, and the fsm must be
+    // stopped
+    if (ret_state->status == ERROR)
+      return -1;
+
+    // the user set the finite state machine to ok, it
+    // means the state machine finished the computation,
+    // and the final data should be present in the
+    // output.
+    if (ret_state->status == OK)
+      return 0;
+
+    // the user set the finite state machine to continue,
+    // it means the computation is not done yet, and
+    // the callback function will be called again.
+    if (ret_state->status == CONTINUE)
       s = ret_state;
-    }
   }
   return -1;
 }
@@ -185,8 +219,23 @@ int fsm_loop(input_t *i, output_t *o, state_t *s) {
 /**
  * a wrapper around fsm_loop, currently not being used. in the
  * end it will also be in charge to initialize and configure
- * all data structures used by the fsm.
+ * all data structures used by the fsm. It can be useful when
+ * using dynamic memory instead of the stack.
  */
-int fsm_start(input_t *i, output_t *o, state_t *s) {
-  return fsm_loop(i, o, s);
+int fsm_start(state_t *(*init_callback)(input_t *, output_t *, state_t *), input_t *i, output_t *o, state_t *s) {
+  state_t *init_state = s;
+
+  // if an init callback function is given, then it must be executed
+  if (init_callback != NULL) {
+    if (fsm_check(i, o, s) <0) return -1; 
+    init_state = init_callback(i, o, s);
+    if (fsm_check(i, o, s) <0) return -1; 
+  }
+
+  // TODO: when the callback function is executed, its returned
+  // state is not checked in the fsm_loop (first call). It means
+  // if something was not correctly initialized, it will be ignored
+  // and the main callback function in the fsm will be executed
+  // anyway. This is not good, and it must be fixed.
+  return fsm_loop(i, o, init_state);
 }
