@@ -118,18 +118,20 @@ int fsm_init(input_t *i, output_t *o, state_t *s) {
  * following the convention, output_t should contain the
  * final result.
  */
-void fsm_state_ok(state_t *s) {
+state_t *fsm_state_ok(state_t *s) {
   s->status = OK;
   s->message = NULL;
+  return s;
 }
 
 /**
  * set state's status to CONTINUE, it means the fsm
  * has not finished yet and will continue the execution.
  */
-void fsm_state_continue(state_t *s) {
+state_t *fsm_state_continue(state_t *s) {
   s->status = CONTINUE;
   s->message = NULL;
+  return s;
 }
 
 /**
@@ -138,18 +140,20 @@ void fsm_state_continue(state_t *s) {
  * fsm will stop and set the message field with a 
  * specific error message.
  */
-void fsm_state_error(char *msg, state_t *s) {
+state_t *fsm_state_error(char *msg, state_t *s) {
   s->status = ERROR;
   s->message = msg;
+  return s;
 }
 
 /**
  * set state's handler, this is the function executed
  * by the fsm.
  */
-void fsm_state_handler(struct __state *(*handler)(input_t *, output_t *, struct __state *), state_t *s) {
+state_t *fsm_state_handler(struct __state *(*handler)(input_t *, output_t *, struct __state *), state_t *s) {
   // if (s->handler != handler) set_state_enter(s);
   s->handler = handler;
+  return s;
 }
 
 /**

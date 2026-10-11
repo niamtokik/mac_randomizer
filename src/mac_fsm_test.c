@@ -41,9 +41,9 @@ state_t *counter(input_t *i, output_t *o, state_t *s) {
   int *output = o->output;
   *input += 1;
   *output = *input;
-  if (*input <255) fsm_state_continue(s);
-  if (*input == 255) fsm_state_ok(s);
-  return s;
+  if (*input <255) return fsm_state_continue(s);
+  if (*input == 255) return fsm_state_ok(s);
+  return fsm_state_error("undefined", s);
 }
 
 MU_TEST(test_fsm_counter) {
@@ -90,14 +90,12 @@ state_t *pong(input_t *, output_t *, state_t *);
 state_t *ping(input_t *i, output_t *o, state_t *s) {
   _debug("%s", "ping");
   fsm_state_handler(pong, s);
-  fsm_state_continue(s);
-  return s;
+  return fsm_state_continue(s);
 }
 
 state_t *pong(input_t *i, output_t *o, state_t *s) {
   _debug("%s", "pong");
-  fsm_state_ok(s);
-  return s;
+  return fsm_state_ok(s);
 }
 
 MU_TEST(test_fsm_pingpong) {
@@ -117,34 +115,109 @@ MU_TEST_SUITE(test_fsm_pingpong_suite) {
 }
 
 /*********************************************************************
- * fsm mac tokenizer + parser
+ * DRAFT: fsm mac simple parser
  ********************************************************************/
-// custom output structure to embed the final mac address.
-struct output {
-  uint8_t *mac_address;
-  size_t mac_address_length;
-  int position;
-};
+// should be used to initialize the data, invoked with fsm_state()
+// function.
+state_t *tokenizer_init(input_t *i, output_t *o, state_t *s) {
+  return fsm_state_ok(s);
+}
 
+// main handler called to parse every
 state_t *tokenizer(input_t *i, output_t *o, state_t *s) {
   // dereference input
   size_t string_length = i->input_length;
   char *string = i->input;
-  _debug("%s %zu\n", string, string_length);
+  _debug("input_length:%zu, input(value):%s", string_length, string);
 
   // derefrence output
-  // size_t output_length = o->output_length;
-  struct output *output = o->output;
-  _debug("%d\n", output->position);
+  size_t output_length = o->output_length;
+  uint8_t *mac_address = o->output;
+  _debug("output_length:%d, output(address):%p", output_length, mac_address);
 
-  // increment the position of the cursor
-  output->position = output->position+1;
+  // dereferece data from state
+  int *position = s->data;
+  _debug("position:%d", *position);
 
-  // return ok for now, this is not a loop, this is just design test
-  fsm_state_ok(s);
-  return s;
+  // just for debugging purpose
+  _debug("string_char:%c", string[*position]);
+  _debug("output_data:%x", mac_address[*position]);
+
+  // NOTE: in fact, we can easily check every position with
+  // a switch/case. But I don't want something "smart", i want
+  // something stupid that can be understood by anybody.
+  if (*position>16)
+    return fsm_state_error("overflow", s);
+
+  if (*position==0 && ! is_char_digit(string[*position]))
+    return fsm_state_error("bad starting char (0)", s);
+
+  if (*position==2 && ! is_char_separator(string[*position]))
+    return fsm_state_error("not a separator", s);
+
+  if (*position==5 && ! is_char_separator(string[*position]))
+    return fsm_state_error("not a separator", s);
+
+  if (*position==8 && ! is_char_separator(string[*position]))
+    return fsm_state_error("not a separator", s);
+
+  if (*position==11 && ! is_char_separator(string[*position]))
+    return fsm_state_error("not a separator", s);
+
+  if (*position==14 && ! is_char_separator(string[*position]))
+    return fsm_state_error("not a separator", s);
+
+  // just stop the computation here for now
+  if (is_char_digit(string[*position])) {
+    // uint8t nibble = 0;
+    // char_to_uint8n(string[*position], &nibble);
+    // nibble_to_uint8(nibble, mac_address[*position]);
+    *position += 1;
+    return fsm_state_ok(s);
+  }
+
+  // should never reach this part.
+  return fsm_state_error("should not be there", s);
 }
 
+MU_TEST(test_fsm_tokenizer) {
+  input_t si;
+  output_t so;
+  state_t s;
+  fsm_init(&si, &so, &s);
+
+  // configure the input
+  // the string is directly set to a mac address
+  char *string = "01:23:45:67:89:ab";
+  size_t string_length = strlen(string);
+  si.input = string;
+  si.input_length = string_length;
+
+  // configure the output
+  uint8_t mac_address[6];
+  so.output = mac_address;
+  so.output_length = sizeof(uint8_t)*6;
+
+  // configure the state
+  int position = 0;
+  s.data = &position;
+  s.data_length = sizeof(int);
+  fsm_state_handler(tokenizer, &s);
+
+  // start the tokenizer
+  int ret = fsm_start(tokenizer_init, &si, &so, &s);
+  _debug("message: %s", s.message);
+  mu_assert(ret == 0, "ret issue");
+  mu_assert(s.message == NULL, "message should not be set");
+}
+
+MU_TEST_SUITE(test_fsm_tokenizer_suite) {
+  MU_RUN_TEST(test_fsm_tokenizer);
+}
+
+/*********************************************************************
+ * fsm mac tokenizer + parser
+ ********************************************************************/
 struct tokenizer_output {
   // the position of the input cursor;
   int cursor_position;
@@ -241,37 +314,6 @@ state_t *tokenizer_handler(input_t *i, output_t *o, state_t *s) {
 // required: format desired (e.g. cisco, ieee, or ietf)
 //           type of mac address (e.g. eui48 or eui64)
 
-MU_TEST(test_fsm_tokenizer) {
-  input_t si;
-  output_t so;
-  state_t s;
-  fsm_init(&si, &so, &s);
-
-  // configure the input
-  char *string = "01:23:45:67:89:ab";
-  size_t string_length = strlen(string);
-  si.input = string;
-  si.input_length = string_length;
-
-  // configure the output
-  uint8_t mac_address[6];
-  struct output output = {
-    .mac_address = mac_address,
-    .mac_address_length = sizeof(uint8_t) * 6,
-    .position = 0,
-  };
-  so.output = &output;
-  so.output_length = sizeof(struct output);
-
-  // start the tokenizer
-  fsm_state_handler(tokenizer, &s);
-  int ret = fsm_loop(&si, &so, &s);
-  mu_assert(ret == 0, "ret issue");
-}
-
-MU_TEST_SUITE(test_fsm_tokenizer_suite) {
-  MU_RUN_TEST(test_fsm_tokenizer);
-}
 
 /*********************************************************************
  * Main test suite.
