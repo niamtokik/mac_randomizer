@@ -34,6 +34,51 @@
 #include "mac_test_helper.h"
 
 /*********************************************************************
+ * test handler
+ ********************************************************************/
+state_t *dumb_callback(input_t *i, output_t *o, state_t *s) {
+  int32_t *input = i->input;
+  switch (*input) {
+    case 0x01: return fsm_state_error("error", s);
+    case 0x02: return fsm_state_unknown(s);
+    default: return fsm_state_ok(s);
+  }
+}
+
+MU_TEST(test_fsm_handlers) {
+  input_t si;
+  output_t so;
+  state_t s;
+  fsm_init(&si, &so, &s);
+
+  int32_t i;
+  si.input = &i;
+  si.input_length = sizeof(int32_t);
+
+  fsm_state_handler(dumb_callback, &s);
+
+  int ret = 0;
+  i = 1;
+  ret = fsm_loop(&si, &so, &s);
+  mu_assert(ret == -1, "should return an error");
+  mu_assert(s.status == ERROR, "should be set to error");
+
+  i = 2;
+  ret = fsm_loop(&si, &so, &s);
+  mu_assert(ret == -1, "should return an unkonwn state");
+  mu_assert(s.status == UNKNOWN, "should be set to unknown");
+
+  i = 0;
+  ret = fsm_loop(&si, &so, &s);
+  mu_assert(ret == 0, "should be okay");
+  mu_assert(s.status == OK, "should be OK");
+}
+
+MU_TEST_SUITE(test_fsm_handlers_suite) {
+  MU_RUN_TEST(test_fsm_handlers);
+}
+
+/*********************************************************************
  * fsm counter
  ********************************************************************/
 state_t *counter(input_t *i, output_t *o, state_t *s) {
@@ -200,9 +245,12 @@ state_t *tokenizer(input_t *i, output_t *o, state_t *s) {
 }
 
 MU_TEST(test_fsm_tokenizer) {
+  // allocate data structure on the stack
   input_t si;
   output_t so;
   state_t s;
+
+  // cleanup the data structure
   fsm_init(&si, &so, &s);
 
   // configure the input
@@ -218,13 +266,18 @@ MU_TEST(test_fsm_tokenizer) {
   so.output = mac_address;
   so.output_length = sizeof(uint8_t)*6;
 
-  // configure the state
+  // configure state's data. the idea is to isolate the
+  // input from the output during the computation, and
+  // put everything in state-'s data.
   struct data data = {
     .input_cursor = 0,
     .output_cursor = 0,
   };
   s.data = &data;
   s.data_length = sizeof(struct data);
+
+  // this is the default state hander, it will be called
+  // on each computation.
   fsm_state_handler(tokenizer, &s);
 
   // start the tokenizer
@@ -351,6 +404,7 @@ state_t *tokenizer_handler(input_t *i, output_t *o, state_t *s) {
  * Main test suite.
  ********************************************************************/
 int main() {
+  MU_RUN_SUITE(test_fsm_handlers_suite);
   MU_RUN_SUITE(test_fsm_counter_suite);
   MU_RUN_SUITE(test_fsm_pingpong_suite);
   MU_RUN_SUITE(test_fsm_tokenizer_suite);

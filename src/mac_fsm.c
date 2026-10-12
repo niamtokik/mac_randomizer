@@ -37,12 +37,6 @@
  * their own handlers. In some situation though (e.g. parsing a string),
  * using one state should be enough.
  *
- * TODO: the status of the computation must be enforced by the user
- *       to ensure the data returned has been checked. Then, the
- *       fsm must set the status to UNDEFINED after the returned
- *       value. If in the next computation, the value is still to
- *       UNDEFINED, it means the computation missed something.
- *
  * TODO: add in the documentation.
  *
  * TODO: add handler_init to be called when the fsm_start function
@@ -147,6 +141,14 @@ state_t *fsm_state_error(char *msg, state_t *s) {
 }
 
 /**
+ * internal function.
+ */
+state_t *fsm_state_unknown(state_t *s) {
+  s->status = UNKNOWN;
+  return s;
+}
+
+/**
  * set state's handler, this is the function executed
  * by the fsm.
  */
@@ -166,22 +168,18 @@ int fsm_check(input_t *i, output_t *o, state_t *s) {
   return 0;
 }
 
-/**
- * fsm main loop, it will give the input, output and state
- * to the handler definined in the state data structure. The
- * status is then checked to define if the computation is done
- * or not.
- */
-int fsm_loop(input_t *i, output_t *o, state_t *s) {
-  for (;;) {
-
+// function to execute the computation, in charge to manage
+// the returned result/status of the fsm.
+enum fsm_status fsm_eval(state_t *(callback)(input_t *, output_t *o, state_t*), input_t *i, output_t *o, state_t *s) {
     // check if the struct to be used is valid.
-    if (fsm_check(i, o, s) <0) return -1; 
+    if (fsm_check(i, o, s) <0) return EVAL_ERROR; 
 
     // execute the handler present in the state_t data structure,
     // it should return a valid struct.
-    state_t *ret_state = s->handler(i, o, s);
-    if (fsm_check(i, o, s) <0) return -1; 
+    fsm_state_unknown(s);
+    state_t *ret_state;
+    if (callback) ret_state = callback(i, o, s);
+    if (fsm_check(i, o, s) <0) return EVAL_ERROR; 
 
     // TODO: if the returned struct is different than the one we
     // currently use, it means this is a state transition. In this
@@ -195,27 +193,55 @@ int fsm_loop(input_t *i, output_t *o, state_t *s) {
     // TODO: if the state returned is unknown, it means the user never
     // set a valid state after the computation, it should be
     // treated as an error (unkonwn state).
-    // if (ret_state->status == UNKNOWN)
-    //   return -1;
+    if (ret_state->status == UNKNOWN)
+      return UNKNOWN;
 
     // the user state the finite state machine to error, it
     // means something bad happened, and the fsm must be
     // stopped
     if (ret_state->status == ERROR)
-      return -1;
+      return ERROR;
 
     // the user set the finite state machine to ok, it
     // means the state machine finished the computation,
     // and the final data should be present in the
     // output.
     if (ret_state->status == OK)
-      return 0;
+      return OK;
 
     // the user set the finite state machine to continue,
     // it means the computation is not done yet, and
     // the callback function will be called again.
-    if (ret_state->status == CONTINUE)
+    if (ret_state->status == CONTINUE) {
       s = ret_state;
+      return CONTINUE;
+    }
+
+    // TODO: should be defined to UNKNOW
+    return EVAL_ERROR;
+}
+
+/**
+ * fsm main loop, it will give the input, output and state
+ * to the handler definined in the state data structure. The
+ * status is then checked to define if the computation is done
+ * or not.
+ */
+int fsm_loop(input_t *i, output_t *o, state_t *s) {
+  for (;;) {
+
+    // evaluate the computation and check its result, this where
+    // the routing happens.
+    //
+    // TODO: DRY. This should be executed in another function to be reused
+    // in other part of the application.
+    switch (fsm_eval(s->handler, i, o, s)) {
+      case EVAL_ERROR: return -1;
+      case ERROR: return -1;
+      case OK: return 0;
+      case CONTINUE: continue;
+      default: return -1;
+    }
   }
   return -1;
 }
@@ -231,9 +257,14 @@ int fsm_start(state_t *(*init_callback)(input_t *, output_t *, state_t *), input
 
   // if an init callback function is given, then it must be executed
   if (init_callback != NULL) {
-    if (fsm_check(i, o, s) <0) return -1; 
-    init_state = init_callback(i, o, s);
-    if (fsm_check(i, o, s) <0) return -1; 
+    // TODO: DRY.
+    switch (fsm_eval(init_callback, i, o, s)) {
+      case EVAL_ERROR: return -1;
+      case ERROR: return -1;
+      case OK: return 0;
+      case CONTINUE: break;
+      default: return -1;
+    }
   }
 
   // TODO: when the callback function is executed, its returned

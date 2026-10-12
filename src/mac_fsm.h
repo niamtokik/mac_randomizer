@@ -37,7 +37,9 @@ enum fsm_status {
   ERROR,
   OK,
   CONTINUE,
-  // UNKNOWN,
+  EVAL_ERROR,
+  UNKNOWN,
+  // TODO: ENTER,
 };
 
 // FSM input data-structure, usually where the
@@ -111,6 +113,7 @@ state_t *fsm_state_handler(state_t *(*handler)(input_t *, output_t *, state_t *)
 state_t *fsm_state_ok(state_t *);
 state_t *fsm_state_continue(state_t *);
 state_t *fsm_state_error(char *, state_t *);
+state_t *fsm_state_unknown(state_t *);
 
 // fsm main functions
 int fsm_init(input_t *, output_t *, state_t *);
