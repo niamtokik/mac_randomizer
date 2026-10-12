@@ -39,8 +39,18 @@ enum fsm_status {
   CONTINUE,
   EVAL_ERROR,
   UNKNOWN,
-  // TODO: ENTER,
 };
+
+// TODO:
+// Using data instead of enum for the status can probably
+// be better. using uint32_t for example, it could then
+// be possible to let develoeprs to define their own
+// status dynamically.
+// #define FSM_STATUS_CONTINUE 0x000_0000
+// #define FSM_STATUS_OK 0x0000_0001
+// #define FSM_STATUS_ERROR -0x0000_1000
+// #define FSM_STATUS_ERROR_EVAL 0x0000_2000
+// #define FSM_STATUS_UNKNOWN 0x0000_3000
 
 // FSM input data-structure, usually where the
 // inputs/events are stored. This is a flexible structure,
@@ -74,14 +84,15 @@ typedef struct __state {
 
   // main handler, called evenry time a new input is taken.
   struct __state *(*handler)(input_t *, output_t *, struct __state *);
-  // // callback function called when a state transition happens
-  // void (*handler_enter)(output_t *, struct __state *);
-  //
-  // // callback function called when the fsm return an error
-  // int (*handler_error)(input_t *, output *, struct __state *);
-  //
-  // // previous state called, set by the fsm after a transition
-  // struct __state *previous_state;
+
+  // callback function called when a state transition happens
+  void (*handler_enter)(output_t *, struct __state *);
+
+  // callback function called when the fsm return an error
+  enum fsm_status (*handler_error)(input_t *, output_t *, struct __state *);
+
+  // previous state called, set by the fsm after a transition
+  struct __state *previous_state;
 
   // internal data defined by the user if needed
   void *data;

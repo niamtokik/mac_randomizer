@@ -51,27 +51,35 @@ MU_TEST(test_fsm_handlers) {
   state_t s;
   fsm_init(&si, &so, &s);
 
+  // input initialization
   int32_t i;
   si.input = &i;
   si.input_length = sizeof(int32_t);
 
+  // handler initialization
   fsm_state_handler(dumb_callback, &s);
 
+  // set the input to 1 (error)
   int ret = 0;
   i = 1;
   ret = fsm_loop(&si, &so, &s);
   mu_assert(ret == -1, "should return an error");
   mu_assert(s.status == ERROR, "should be set to error");
 
+  // set the input to 2 (unknown)
   i = 2;
   ret = fsm_loop(&si, &so, &s);
   mu_assert(ret == -1, "should return an unkonwn state");
   mu_assert(s.status == UNKNOWN, "should be set to unknown");
 
+  // set the input to 0 (ok)
   i = 0;
   ret = fsm_loop(&si, &so, &s);
   mu_assert(ret == 0, "should be okay");
   mu_assert(s.status == OK, "should be OK");
+
+  // TODO: check EVAL_ERROR status
+  // TODO: check transition
 }
 
 MU_TEST_SUITE(test_fsm_handlers_suite) {

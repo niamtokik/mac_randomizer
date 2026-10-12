@@ -39,24 +39,9 @@
  *
  * TODO: add in the documentation.
  *
- * TODO: add handler_init to be called when the fsm_start function
- *       is used. it should be used to initialize input, output and
- *       eventually state.
- *
- * TODO: add handler_error to be called in case of error, default to
- *       NULL to disable the feature. can be used to close a file
- *       descriptor or free memory.
- *
  * TODO: add handler_ok to be called when everything has been
  *       correctly done. It can be used to ensure a file descriptor
  *       must be closed or memory freed at the end of the fsm.
- *
- * TODO: add handler_enter to be called when a transition happens
- *       (when the pointer to the handler change). it should not
- *       have access to the input, only to the output.
- *
- * TODO: add handler_previous to be set with the previous function
- *       called.
  *
  * TODO: add debug flag and debug functions(s).
  *
@@ -181,16 +166,21 @@ enum fsm_status fsm_eval(state_t *(callback)(input_t *, output_t *o, state_t*), 
     if (callback) ret_state = callback(i, o, s);
     if (fsm_check(i, o, s) <0) return EVAL_ERROR; 
 
-    // TODO: if the returned struct is different than the one we
+    // if the returned struct is different than the one we
     // currently use, it means this is a state transition. In this
     // case, if the handler_enter callback function is defined,
     // the status of the structure must be set to ENTER and then
     // the handler_enter callback must be called. The ENTER status
     // MUST NOT alter the state_t data structure.
-    //   if (ret_state->status == ENTER
-    //     ...
+    if (ret_state != s && ret_state->handler_enter != NULL)
+      (void)ret_state->handler_enter(o, s);
 
-    // TODO: if the state returned is unknown, it means the user never
+    // when a full transition happens, the previous state address
+    // is stored there.
+    if (ret_state != s)
+      ret_state->previous_state = s;
+
+    // if the state returned is unknown, it means the user never
     // set a valid state after the computation, it should be
     // treated as an error (unkonwn state).
     if (ret_state->status == UNKNOWN)
@@ -199,6 +189,10 @@ enum fsm_status fsm_eval(state_t *(callback)(input_t *, output_t *o, state_t*), 
     // the user state the finite state machine to error, it
     // means something bad happened, and the fsm must be
     // stopped
+    if (ret_state->status == ERROR && ret_state->handler_error != NULL)
+      return ret_state->handler_error(i, o, s);
+
+    // if no error callback functions is defined, simply return the error
     if (ret_state->status == ERROR)
       return ERROR;
 
@@ -217,8 +211,9 @@ enum fsm_status fsm_eval(state_t *(callback)(input_t *, output_t *o, state_t*), 
       return CONTINUE;
     }
 
-    // TODO: should be defined to UNKNOW
-    return EVAL_ERROR;
+    // if the loop stop for no reason, return unknow status
+    // it should never happen.
+    return UNKNOWN;
 }
 
 /**
