@@ -29,12 +29,18 @@
  */
 #include <stdio.h>
 #include <stdlib.h>
+#include <unistd.h>
+#include <fcntl.h>
 #include "minunit.h"
 #include "mac.h"
 #include "mac_test_helper.h"
 
 /*********************************************************************
  * test handler
+ * ------------
+ *
+ * A simple test to check the function callbacks.
+ *
  ********************************************************************/
 state_t *dumb_callback(input_t *i, output_t *o, state_t *s) {
   int32_t *input = i->input;
@@ -88,6 +94,10 @@ MU_TEST_SUITE(test_fsm_handlers_suite) {
 
 /*********************************************************************
  * fsm counter
+ * -----------
+ *
+ * a simple counter incremented on every computation.
+ *
  ********************************************************************/
 state_t *counter(input_t *i, output_t *o, state_t *s) {
   int *input = i->input;
@@ -135,7 +145,79 @@ MU_TEST_SUITE(test_fsm_counter_suite) {
 }
 
 /*********************************************************************
+ * file descriptor test
+ * --------------------
+ *
+ * the idea is to always ensure a file descriptor is being closed
+ * after its used by a teardown function in case of success or by
+ * calling the error callback function in case of error.
+ *
+ ********************************************************************/
+struct input_fd {
+  char *filename;
+  int fd;
+};
+
+state_t *fd_handler_init(input_t *i, output_t *o, state_t *s) {
+  struct input_fd *ifd = i->input;
+  ifd->fd = open("/dev/random", O_RDONLY | O_NONBLOCK);
+  return fsm_state_continue(s);
+}
+
+state_t *fd_handler(input_t *i, output_t *o, state_t *s) {
+  struct input_fd *ifd = i->input;
+  char c[32];
+  bzero(c, sizeof(char)*32);
+
+  ssize_t ret = read(ifd->fd, c, 32);
+  if (ret<0) return fsm_state_error("fd error", s);
+
+  for (int j=0; j<32; j++)
+    _debug("random byte: %d,", c[j]);
+
+  return fsm_state_ok(s);
+}
+
+enum fsm_status fd_handler_error(input_t *i, output_t *o, state_t *s) {
+  struct input_fd *ifd = i->input;
+  close(ifd->fd);
+  return ERROR;
+}
+
+MU_TEST(test_fsm_file_descriptor) {
+  input_t si;
+  output_t so;
+  state_t s;
+  fsm_init(&si, &so, &s);
+
+  // initialize input
+  struct input_fd ifd;
+  bzero(&ifd, sizeof(struct input_fd));
+  si.input = &ifd;
+  si.input_length = sizeof(struct input_fd);
+
+  // initialize state
+  fsm_state_handler(fd_handler, &s);
+  fsm_state_handler_error(fd_handler_error, &s);
+
+  // start the fsm
+  fsm_start(fd_handler_init, &si, &so, &s);
+
+  // TODO:
+  // to be moved into a teardown callback
+  close(ifd.fd);
+}
+
+MU_TEST_SUITE(test_fsm_file_descriptor_suite) {
+  MU_RUN_TEST(test_fsm_file_descriptor);
+}
+
+/*********************************************************************
  * fsm ping pong
+ * -------------
+ *
+ * a ping/pong test to check the state transition.
+ *
  ********************************************************************/
 state_t *ping(input_t *, output_t *, state_t *);
 state_t *pong(input_t *, output_t *, state_t *);
@@ -169,6 +251,11 @@ MU_TEST_SUITE(test_fsm_pingpong_suite) {
 
 /*********************************************************************
  * DRAFT: fsm mac simple parser
+ * ----------------------------
+ *
+ * A mac address parser using the fsm. the code present here will
+ * then be merged in the main library, this is a sandbox.
+ *
  ********************************************************************/
 // should be used to initialize the data, invoked with fsm_state()
 // function.
@@ -310,6 +397,9 @@ MU_TEST_SUITE(test_fsm_tokenizer_suite) {
 
 /*********************************************************************
  * fsm mac tokenizer + parser
+ * --------------------------
+ *
+ * Another mac address parser.
  ********************************************************************/
 struct tokenizer_output {
   // the position of the input cursor;
@@ -413,6 +503,7 @@ state_t *tokenizer_handler(input_t *i, output_t *o, state_t *s) {
  ********************************************************************/
 int main() {
   MU_RUN_SUITE(test_fsm_handlers_suite);
+  MU_RUN_SUITE(test_fsm_file_descriptor_suite);
   MU_RUN_SUITE(test_fsm_counter_suite);
   MU_RUN_SUITE(test_fsm_pingpong_suite);
   MU_RUN_SUITE(test_fsm_tokenizer_suite);

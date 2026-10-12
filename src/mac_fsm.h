@@ -91,6 +91,9 @@ typedef struct __state {
   // callback function called when the fsm return an error
   enum fsm_status (*handler_error)(input_t *, output_t *, struct __state *);
 
+  // TODO:
+  // void (*handler_ok)(input_t *, output_t *, struct __state *);
+
   // previous state called, set by the fsm after a transition
   struct __state *previous_state;
 
@@ -119,6 +122,10 @@ int fsm_init(input_t *, output_t *, state_t *);
 // int fsm_state_handler_enter();
 // int fsm_state_handler_error();
 state_t *fsm_state_handler(state_t *(*handler)(input_t *, output_t *, state_t *), state_t *);
+state_t *fsm_state_handler_enter(void (*handler_error)(output_t *, state_t *), state_t *);
+state_t *fsm_state_handler_error(enum fsm_status (*handler_error)(input_t *, output_t *, state_t *), state_t *);
+// TODO:
+// state_t *fsm_state_handler_ok(void (*handle_ok)(input_t *, output_t *, state_t *), state_t *);
 
 // state management
 state_t *fsm_state_ok(state_t *);

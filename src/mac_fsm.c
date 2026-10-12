@@ -137,11 +137,27 @@ state_t *fsm_state_unknown(state_t *s) {
  * set state's handler, this is the function executed
  * by the fsm.
  */
-state_t *fsm_state_handler(struct __state *(*handler)(input_t *, output_t *, struct __state *), state_t *s) {
+state_t *fsm_state_handler(state_t *(*handler)(input_t *, output_t *, state_t *), state_t *s) {
   // if (s->handler != handler) set_state_enter(s);
   s->handler = handler;
   return s;
 }
+
+state_t *fsm_state_handler_enter(void (*handler_enter)(output_t *, state_t *), state_t *s) {
+  s->handler_enter = handler_enter;
+  return s;
+}
+
+state_t *fsm_state_handler_error(enum fsm_status (*handler_error)(input_t *, output_t *, state_t *), state_t *s) {
+  s->handler_error = handler_error;
+  return s;
+}
+
+// TODO:
+// state_t *fsm_state_handler_ok(void (*handler_enter)(input_t *, output_t *, state_t *), state_t *s) {
+//  s->handler_ok = handler_ok;
+//  return s;
+// }
 
 /**
  * check if the state is not set to NULL. If something
