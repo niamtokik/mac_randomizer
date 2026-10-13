@@ -497,6 +497,51 @@ state_t *tokenizer_handler(input_t *i, output_t *o, state_t *s) {
 // required: format desired (e.g. cisco, ieee, or ietf)
 //           type of mac address (e.g. eui48 or eui64)
 
+/*********************************************************************
+ * fsm argument parser
+ * -------------------
+ *
+ * The fsm can be used to parser arguments from the command line and
+ * convert them into an internal data structure.
+ ********************************************************************/
+struct ouptut_args {
+  char *program_name;
+  uint8_t flag_all;
+  uint8_t flag_compress;
+  uint8_t flag_data;
+  char *flag_file;
+  char *flag_config;
+  char **extra;
+};
+
+MU_TEST(test_fsm_arguments) {
+  input_t si;
+  output_t so;
+  state_t s;
+  fsm_init(&si, &so, &s);
+
+  char *argv[] = {
+    "/path/to/my/program", // program path
+    "-a", // all flag
+    "-z", // compress flag
+    "--data", // data flag
+    "--file", // file flag
+    "/path/to/file", // file parameter
+    "-c", // config flag
+    "/path/to/config", // config parameter
+    "--", // stop parsing
+    "extra_args",
+  };
+  int argc = 10;
+  _debug("%s", argv[0]);
+  _debug("%d", argc);
+
+}
+
+MU_TEST_SUITE(test_fsm_arguments_suite) {
+  MU_RUN_TEST(test_fsm_arguments);
+}
+
 
 /*********************************************************************
  * Main test suite.
@@ -507,6 +552,7 @@ int main() {
   MU_RUN_SUITE(test_fsm_counter_suite);
   MU_RUN_SUITE(test_fsm_pingpong_suite);
   MU_RUN_SUITE(test_fsm_tokenizer_suite);
+  MU_RUN_SUITE(test_fsm_arguments_suite);
   MU_REPORT();
   return MU_EXIT_CODE;
 }

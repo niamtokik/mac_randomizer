@@ -57,7 +57,13 @@
 #include "mac.h"
 
 /**
- * initialize and sanitize the state_t structure.
+ * Initialize and sanitize the state_t structure.
+ *
+ * This function is used to reset or initialize the state_t data-structure
+ * used to store the main information about the FSM.
+ *
+ * @param s A pointer to a FSM's state_t data-structure.
+ *
  */
 int fsm_state_init(state_t *s) {
   bzero(s, sizeof(state_t));
@@ -65,12 +71,24 @@ int fsm_state_init(state_t *s) {
 }
 
 /**
- * initialize and sanitize the input_t structure.
+ * Initialize and sanitize the input_t structure.
+ *
+ * This function is used to reset ro initialize the input_t data-structure
+ * used to store the input data.
+ *
+ * @param s A pointer to a FSM's state_t data-structure.
+ *
  */
 int fsm_input_init(input_t *si) {
   bzero(si, sizeof(input_t));
   return 0;
 }
+
+// TODO: create a function helper to extract the input part of the
+// input_t data-structure.
+// void * fsm_input(input_t *si) {
+//  return si->input;
+// }
 
 /**
  * initialize and sanitize the output_t structure.
@@ -97,6 +115,7 @@ int fsm_init(input_t *i, output_t *o, state_t *s) {
  * following the convention, output_t should contain the
  * final result.
  */
+// TODO: rename fsm_state_ok to fsm_status_ok
 state_t *fsm_state_ok(state_t *s) {
   s->status = OK;
   s->message = NULL;
@@ -107,6 +126,7 @@ state_t *fsm_state_ok(state_t *s) {
  * set state's status to CONTINUE, it means the fsm
  * has not finished yet and will continue the execution.
  */
+// TODO: rename fsm_state_continue to fsm_status_continue
 state_t *fsm_state_continue(state_t *s) {
   s->status = CONTINUE;
   s->message = NULL;
@@ -119,6 +139,7 @@ state_t *fsm_state_continue(state_t *s) {
  * fsm will stop and set the message field with a 
  * specific error message.
  */
+// TODO: rename fsm_state_error to fsm_status_error
 state_t *fsm_state_error(char *msg, state_t *s) {
   s->status = ERROR;
   s->message = msg;
@@ -128,6 +149,7 @@ state_t *fsm_state_error(char *msg, state_t *s) {
 /**
  * internal function.
  */
+// TODO: rename fsm_state_unknown to fsm_status_unknown
 state_t *fsm_state_unknown(state_t *s) {
   s->status = UNKNOWN;
   return s;
@@ -143,13 +165,36 @@ state_t *fsm_state_handler(state_t *(*handler)(input_t *, output_t *, state_t *)
   return s;
 }
 
+/**
+ * set state's enter handler, this is the function executed
+ * by the fsm when a transition happens.
+ */
 state_t *fsm_state_handler_enter(void (*handler_enter)(output_t *, state_t *), state_t *s) {
   s->handler_enter = handler_enter;
   return s;
 }
 
+/**
+ *  Configure error callback teardown function.
+ * 
+ */
 state_t *fsm_state_handler_error(enum fsm_status (*handler_error)(input_t *, output_t *, state_t *), state_t *s) {
   s->handler_error = handler_error;
+  return s;
+}
+
+/**
+ * Configure ok callback teardown function.
+ *
+ * set state_t data-structure with a teardown function callback executed after the last
+ * succesful computation.
+ *
+ * @param handle_ok a pointer to a callback function.
+ * @param s FSM's state data-structure.
+ *
+ */
+state_t *fsm_state_handler_ok(void (*handle_ok)(input_t *, output_t *, state_t *), state_t *s) {
+  s->handler_ok = handle_ok;
   return s;
 }
 
@@ -211,6 +256,11 @@ enum fsm_status fsm_eval(state_t *(callback)(input_t *, output_t *o, state_t*), 
     // if no error callback functions is defined, simply return the error
     if (ret_state->status == ERROR)
       return ERROR;
+
+    // if handler_ok function callback is defined, then it is executed
+    // before returning everything was good.
+    if (ret_state->status == OK && ret_state->handler_ok != NULL)
+      ret_state->handler_ok(i, o, s);
 
     // the user set the finite state machine to ok, it
     // means the state machine finished the computation,
