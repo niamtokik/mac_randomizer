@@ -45,9 +45,9 @@
 state_t *dumb_callback(input_t *i, output_t *o, state_t *s) {
   int32_t *input = i->input;
   switch (*input) {
-    case 0x01: return fsm_state_error("error", s);
-    case 0x02: return fsm_state_unknown(s);
-    default: return fsm_state_ok(s);
+    case 0x01: return fsm_status_error("error", s);
+    case 0x02: return fsm_status_unknown(s);
+    default: return fsm_status_ok(s);
   }
 }
 
@@ -104,9 +104,9 @@ state_t *counter(input_t *i, output_t *o, state_t *s) {
   int *output = o->output;
   *input += 1;
   *output = *input;
-  if (*input <255) return fsm_state_continue(s);
-  if (*input == 255) return fsm_state_ok(s);
-  return fsm_state_error("undefined", s);
+  if (*input <255) return fsm_status_continue(s);
+  if (*input == 255) return fsm_status_ok(s);
+  return fsm_status_error("undefined", s);
 }
 
 MU_TEST(test_fsm_counter) {
@@ -161,7 +161,7 @@ struct input_fd {
 state_t *fd_handler_init(input_t *i, output_t *o, state_t *s) {
   struct input_fd *ifd = i->input;
   ifd->fd = open("/dev/random", O_RDONLY | O_NONBLOCK);
-  return fsm_state_continue(s);
+  return fsm_status_continue(s);
 }
 
 state_t *fd_handler(input_t *i, output_t *o, state_t *s) {
@@ -170,12 +170,12 @@ state_t *fd_handler(input_t *i, output_t *o, state_t *s) {
   bzero(c, sizeof(char)*32);
 
   ssize_t ret = read(ifd->fd, c, 32);
-  if (ret<0) return fsm_state_error("fd error", s);
+  if (ret<0) return fsm_status_error("fd error", s);
 
   for (int j=0; j<32; j++)
     _debug("random byte: %d,", c[j]);
 
-  return fsm_state_ok(s);
+  return fsm_status_ok(s);
 }
 
 enum fsm_status fd_handler_error(input_t *i, output_t *o, state_t *s) {
@@ -225,12 +225,12 @@ state_t *pong(input_t *, output_t *, state_t *);
 state_t *ping(input_t *i, output_t *o, state_t *s) {
   _debug("%s", "ping");
   fsm_state_handler(pong, s);
-  return fsm_state_continue(s);
+  return fsm_status_continue(s);
 }
 
 state_t *pong(input_t *i, output_t *o, state_t *s) {
   _debug("%s", "pong");
-  return fsm_state_ok(s);
+  return fsm_status_ok(s);
 }
 
 MU_TEST(test_fsm_pingpong) {
@@ -260,7 +260,7 @@ MU_TEST_SUITE(test_fsm_pingpong_suite) {
 // should be used to initialize the data, invoked with fsm_state()
 // function.
 state_t *tokenizer_init(input_t *i, output_t *o, state_t *s) {
-  return fsm_state_continue(s);
+  return fsm_status_continue(s);
 }
 
 struct data {
@@ -298,33 +298,33 @@ state_t *tokenizer(input_t *i, output_t *o, state_t *s) {
   // a switch/case. But I don't want something "smart", i want
   // something stupid that can be understood by anybody.
   if (*position>string_length)
-    return fsm_state_error("overflow", s);
+    return fsm_status_error("overflow", s);
 
   if (*position==0 && ! is_char_digit(string[*position]))
-    return fsm_state_error("bad starting char (0)", s);
+    return fsm_status_error("bad starting char (0)", s);
 
   if (*position==16 && is_char_digit(string[*position])) {
     _debug("digit found (final): %c", string[*position]);
     uint8_t nibble = 0x00;
     char_to_uint8n(string[*position], &nibble);
     nibble_to_uint8(nibble, &mac_address[*output_cursor/2]);
-    return fsm_state_ok(s);
+    return fsm_status_ok(s);
   }
 
   if (*position==2 && ! is_char_separator(string[*position]))
-    return fsm_state_error("not a separator", s);
+    return fsm_status_error("not a separator", s);
 
   if (*position==5 && ! is_char_separator(string[*position]))
-    return fsm_state_error("not a separator", s);
+    return fsm_status_error("not a separator", s);
 
   if (*position==8 && ! is_char_separator(string[*position]))
-    return fsm_state_error("not a separator", s);
+    return fsm_status_error("not a separator", s);
 
   if (*position==11 && ! is_char_separator(string[*position]))
-    return fsm_state_error("not a separator", s);
+    return fsm_status_error("not a separator", s);
 
   if (*position==14 && ! is_char_separator(string[*position]))
-    return fsm_state_error("not a separator", s);
+    return fsm_status_error("not a separator", s);
 
   // just stop the computation here for now
   if (is_char_digit(string[*position])) {
@@ -336,7 +336,7 @@ state_t *tokenizer(input_t *i, output_t *o, state_t *s) {
   }
 
   *position += 1;
-  return fsm_state_continue(s);
+  return fsm_status_continue(s);
 }
 
 MU_TEST(test_fsm_tokenizer) {
@@ -427,7 +427,7 @@ state_t *tokenizer_handler(input_t *i, output_t *o, state_t *s) {
   _debug("%d\n", to->cursor_position);
 
   if (to->cursor_position>23) {
-    fsm_state_error("can't be greater than 23 bytes", s);
+    fsm_status_error("can't be greater than 23 bytes", s);
     return s;
   }
 
@@ -447,7 +447,7 @@ state_t *tokenizer_handler(input_t *i, output_t *o, state_t *s) {
   to->cursor_position += 1;
 
   // just stop for now
-  fsm_state_ok(s);
+  fsm_status_ok(s);
   return s;
 }
 
@@ -514,6 +514,37 @@ struct ouptut_args {
   char **extra;
 };
 
+
+typedef struct args_s {
+  char short_arg;
+  char *long_arg;
+  char *documentation;
+  state_t *state;
+} args_s;
+
+// callback parsers
+// state_t * program_arg();
+// state_t * short_arg();
+// state_t * long_arg();
+// state_t * param_arg();
+
+args_s args[] = {
+  {
+    .short_arg = 'a',
+    .long_arg = "all",
+    .documentation = "",
+    .state = NULL,
+    // .default_arg = 0,
+    // .default_arg_size = sizeof(uint8_t),
+  },
+  {
+    .short_arg = 'z',
+    .long_arg = "compress",
+    .documentation = "",
+    .state = NULL,
+  }
+};
+
 MU_TEST(test_fsm_arguments) {
   input_t si;
   output_t so;
@@ -523,12 +554,13 @@ MU_TEST(test_fsm_arguments) {
   char *argv[] = {
     "/path/to/my/program", // program path
     "-a", // all flag
-    "-z", // compress flag
+    "-zd", // compress flag and debug
     "--data", // data flag
     "--file", // file flag
     "/path/to/file", // file parameter
     "-c", // config flag
     "/path/to/config", // config parameter
+    "--port=8080", // port configuration 
     "--", // stop parsing
     "extra_args",
   };
@@ -541,7 +573,6 @@ MU_TEST(test_fsm_arguments) {
 MU_TEST_SUITE(test_fsm_arguments_suite) {
   MU_RUN_TEST(test_fsm_arguments);
 }
-
 
 /*********************************************************************
  * Main test suite.
