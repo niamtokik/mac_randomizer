@@ -72,10 +72,9 @@ typedef struct __state_output {
 
 // FSM state data-structure.
 typedef struct __state {
-  // TODO
   // a name for the state, not mandatory, can be used for debugging
   // purpose or tracing.
-  // char *name;
+  char *name;
 
   // fsm status, defining what to do at the end of every computations.
   enum fsm_status status;
@@ -136,6 +135,7 @@ void * fsm_get_output(output_t *);
 int fsm_set_output(void *, size_t, output_t *);
 void *get_state_data(state_t *);
 int fsm_set_state_data(void *, size_t, state_t *);
+state_t *fsm_transition(state_t *, state_t *);
 
 // fsm main functions
 int fsm_init(input_t *, output_t *, state_t *);

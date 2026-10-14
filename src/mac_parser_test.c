@@ -61,8 +61,25 @@ MU_TEST(test_nibble_to_uint8) {
   mu_assert(dst == 0x21, "dst issue");
 }
 
-MU_TEST_SUITE(test_nibble_to_uint8_suite) {
+MU_TEST(test_uint8_to_nibble) {
+  uint8_t nibble = 0x00;
+  uint8_t dst = 0x0;
+  int ret = 0;
+
+  ret = uint8_to_nibble(nibble, &dst);
+  mu_assert(ret == 0, "return issue");
+  mu_assert(dst == 0x0, "dst issue");
+
+  nibble = 0x40;
+  dst = 0x0;
+  ret = uint8_to_nibble(nibble, &dst);
+  mu_assert(ret == 0, "return issue");
+  mu_assert(dst == 0x4, "dst issue");
+}
+
+MU_TEST_SUITE(test_nibble_suite) {
   MU_RUN_TEST(test_nibble_to_uint8);
+  MU_RUN_TEST(test_uint8_to_nibble);
 }
 
 /*
@@ -143,7 +160,7 @@ MU_TEST_SUITE(test_mac_parser_suite) {
  * Main test suite.
  ********************************************************************/
 int main() {
-  MU_RUN_SUITE(test_nibble_to_uint8_suite);
+  MU_RUN_SUITE(test_nibble_suite);
   MU_RUN_SUITE(test_mac_parser_suite);
   MU_REPORT();
   return MU_EXIT_CODE;

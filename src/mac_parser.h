@@ -61,7 +61,7 @@ int mac_parse(uint8_t *, char *, size_t);
 // helper
 uint8_t char_to_uint8(char);
 int char_to_uint8n(char, uint8_t *);
-
 int nibble_to_uint8(uint8_t, uint8_t *);
+int uint8_to_nibble(uint8_t, uint8_t *);
 int is_char_digit(char);
 int is_char_separator(char);

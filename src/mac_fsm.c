@@ -37,6 +37,11 @@
  * their own handlers. In some situation though (e.g. parsing a string),
  * using one state should be enough.
  *
+ * An idea would be to create a macro used to initialize/create the
+ * data structure, and/or handlers. everytime it is called, the
+ * the next/previous state could be generated to find eventual
+ * bugs or optimize the fsm.
+ *
  * TODO: add in the documentation.
  *
  * TODO: add debug flag and debug functions(s).
@@ -202,11 +207,17 @@ fsm_state_handler_ok(void (*handle_ok)(input_t *, output_t *, state_t *), state_
   return s;
 }
 
+/**
+ *
+ */
 void *
 fsm_get_input(input_t *i) {
   return i->input;
 }
 
+/**
+ *
+ */
 int
 fsm_set_input(void *input, size_t input_length, input_t *i) {
   if (input==NULL) return -1;
@@ -215,11 +226,17 @@ fsm_set_input(void *input, size_t input_length, input_t *i) {
   return 0;
 }
 
+/**
+ *
+ */
 void *
 fsm_get_output(output_t *o) {
   return o->output;
 }
 
+/**
+ *
+ */
 int
 fsm_set_output(void *output, size_t output_length, output_t *o) {
   if (output==NULL) return -1;
@@ -228,11 +245,17 @@ fsm_set_output(void *output, size_t output_length, output_t *o) {
   return 0;
 }
 
+/**
+ *
+ */
 void *
 fsm_get_state_data(state_t *s) {
   return s->data;
 }
 
+/**
+ *
+ */
 int
 fsm_set_state_data(void *data, size_t data_length, state_t *s) {
   if (data==NULL) return -1;
@@ -241,7 +264,22 @@ fsm_set_state_data(void *data, size_t data_length, state_t *s) {
   return 0;
 }
 
-
+/**
+ * A function to do the transition between 2 states by copying
+ * the input, out and state data structure.
+ */
+state_t *
+fsm_transition(state_t *src, state_t *dst) {
+  memcpy(dst->data, src->data, src->data_length);
+  // dst->handler = src->handler;
+  // dst->handler_enter = src->handler_enter;
+  // dst->handler_error = src->handler_error;
+  // dst->handler_ok = src->handler_ok;
+  // dst->status = src->status;
+  dst->previous_state = src;
+  dst->status = CONTINUE;
+  return dst;
+}
 
 /**
  * check if the state is not set to NULL. If something

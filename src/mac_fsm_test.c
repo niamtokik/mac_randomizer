@@ -26,6 +26,10 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  *
+ * ------------------------------------------------------------------
+ *
+ * TODO: create a memory manager using malloc/realloc.
+ *
  */
 #include <stdio.h>
 #include <stdlib.h>
@@ -88,8 +92,59 @@ MU_TEST(test_fsm_handlers) {
   // TODO: check transition
 }
 
-MU_TEST_SUITE(test_fsm_handlers_suite) {
+// TODO:
+// the transition function does not work currently due
+// to the loop function. Needs to be fixed.
+state_t state_a;
+state_t state_b;
+state_t state_c;
+
+state_t *callback_a(input_t *i, output_t *o, state_t *s) {
+  printf("state_a %s\n", s->name);
+  state_t *ss = fsm_transition(s, &state_b);
+  printf("%s\n", ss->name);
+  printf("%p\n", s->handler);
+  printf("%p\n", ss->handler);
+  return fsm_status_ok(ss);
+}
+
+state_t *callback_b(input_t *i, output_t *o, state_t *s) {
+  printf("state_b\n");
+  return fsm_transition(s, &state_c);
+}
+
+state_t *callback_c(input_t *i, output_t *o, state_t *s) {
+  printf("state_c\n");
+  return fsm_status_ok(s);
+}
+
+MU_TEST(test_fsm_transitions) {
+  input_t si;
+  fsm_input_init(&si);
+
+  output_t so;
+  fsm_output_init(&so);
+
+  fsm_state_init(&state_a);
+  fsm_state_init(&state_b);
+  fsm_state_init(&state_c);
+
+  state_a.name = "state_a";
+  state_a.handler = callback_a;
+
+  state_b.name = "state_b";
+  state_b.handler = callback_b;
+
+  state_c.name = "state_c";
+  state_c.handler = callback_c;
+
+  int ret = fsm_loop(&si, &so, &state_a);
+  mu_assert(ret == 0, "ret error");
+}
+
+MU_TEST_SUITE(test_fsm_suite) {
   MU_RUN_TEST(test_fsm_handlers);
+  MU_RUN_TEST(test_fsm_transitions);
 }
 
 /*********************************************************************
@@ -534,8 +589,6 @@ args_s args[] = {
     .long_arg = "all",
     .documentation = "",
     .state = NULL,
-    // .default_arg = 0,
-    // .default_arg_size = sizeof(uint8_t),
   },
   {
     .short_arg = 'z',
@@ -544,6 +597,14 @@ args_s args[] = {
     .state = NULL,
   }
 };
+
+state_t *program_arg(input_t *i, output_t *o, state_t *s) {
+  return fsm_status_unknown(s);
+}
+
+state_t *short_arg(input_t *i, output_t *o, state_t *s) {
+  return fsm_status_unknown(s);
+}
 
 MU_TEST(test_fsm_arguments) {
   input_t si;
@@ -568,6 +629,8 @@ MU_TEST(test_fsm_arguments) {
   _debug("%s", argv[0]);
   _debug("%d", argc);
 
+  // si.input = argv;
+  // si.input_length = argv;
 }
 
 MU_TEST_SUITE(test_fsm_arguments_suite) {
@@ -578,7 +641,7 @@ MU_TEST_SUITE(test_fsm_arguments_suite) {
  * Main test suite.
  ********************************************************************/
 int main() {
-  MU_RUN_SUITE(test_fsm_handlers_suite);
+  MU_RUN_SUITE(test_fsm_suite);
   MU_RUN_SUITE(test_fsm_file_descriptor_suite);
   MU_RUN_SUITE(test_fsm_counter_suite);
   MU_RUN_SUITE(test_fsm_pingpong_suite);

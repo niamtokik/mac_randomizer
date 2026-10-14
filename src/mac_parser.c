@@ -120,6 +120,9 @@ void mac_token_print(struct token *token) {
   );
 }
 
+/**
+ *
+ */
 uint8_t char_to_uint8(char c) {
   switch(c) {
     case '0': return 0x0;
@@ -148,6 +151,9 @@ uint8_t char_to_uint8(char c) {
   }
 }
 
+/**
+ *
+ */
 int char_to_uint8n(char c, uint8_t *dst) {
   switch(c) {
     case '0': *dst = 0; break;
@@ -177,14 +183,24 @@ int char_to_uint8n(char c, uint8_t *dst) {
   return 1;
 }
 
-// A function to shift to the left an uint8_t, and
-// replace the right part with a nibble (4bits). 
+/**
+ * A function to shift to the left an uint8_t, and
+ * replace the right part with a nibble (4bits). 
+ */ 
 int nibble_to_uint8(uint8_t nibble, uint8_t *dst) {
   if (nibble>0xf) return -1;
   if (nibble<0x0) return -1;
   *dst <<= 4;
   *dst |= nibble;
   return 0;
+}
+
+/**
+ * 
+ */
+int uint8_to_nibble(uint8_t i, uint8_t *dst) {
+  *dst = i >> 4;
+  return 0;  
 }
 
 // this is the main parser, at this time, this is a naive
@@ -239,6 +255,9 @@ int mac_parse(uint8_t *mac_address, char *string, size_t string_len) {
   return 0;
 }
 
+/**
+ *
+ */
 int is_char_digit(char c) {
   if (c>='0' && c<='9') return 1;
   if (c>='a' && c<='f') return 1;
@@ -246,6 +265,9 @@ int is_char_digit(char c) {
   return 0;
 }
 
+/**
+ *
+ */
 int is_char_separator(char c) {
   char sep[3] = {':', '-', '.'};
   for (int i=0; i<3; i++)
