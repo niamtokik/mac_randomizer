@@ -101,6 +101,9 @@ typedef struct __state {
   // internal data defined by the user if needed
   void *data;
   size_t data_length;
+
+  // flags to control the behavior of the fsm
+  uint32_t flags;
 } state_t;
 
 // initializers
@@ -143,9 +146,16 @@ int fsm_check(input_t *, output_t *, state_t *);
 int fsm_start(state_t *(*init_callback)(input_t *, output_t *, state_t *), input_t *, output_t *, state_t *);
 int fsm_loop(input_t *, output_t *, state_t *);
 
+// TODO(fsm-flags):
+// define the FSM flagsstate
+// #define FSM_FLAG_DEBUG 0x0000_0001
+// #define FSM_FLAG_TRACE 0x0000_0002
+
 // internal fsm state data-structure used for
 // debugging and tracing purpose
 typedef struct __fsm_state {
+  // TODO(fsm-flags):
+  // uint32_t flags;
   uint32_t counter;
   // uint32_t transition_counter;
   // uint32_t continue_counter;

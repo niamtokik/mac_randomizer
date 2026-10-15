@@ -274,16 +274,20 @@ fsm_set_state_data(void *data, size_t data_length, state_t *s) {
 }
 
 /**
- * copy data from state_t structure to the new 
- * structure, overwriting the old data if present, using
- * the data_length.
+ * copy data pointer and data_length into the
+ * state_t data-structure destination.
  */
 void
 fsm_state_data_copy(state_t *src, state_t *dst) {
-  if (src->data_length > 0) {
-    dst->data_length = src->data_length;
-    memcpy(dst->data, src->data, src->data_length);
-  }
+  dst->data_length = src->data_length;
+  dst->data = src->data;
+  // TODO: the original implementation can't work correctly
+  // because if the dst->data is NULL, it will do a stack
+  // overflow. So, this function should be used only
+  // when dynamic memory is being used
+  // if (src->data_length > 0 && dst->data) {
+  //  memcpy(dst->data, src->data, src->data_length);
+  // }
 }
 
 /**
