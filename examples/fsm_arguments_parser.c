@@ -66,14 +66,28 @@ struct input {
   char **argv;
 };
 
+state_t parser_state =  {
+  .name = "parser",
+  .handler = NULL,
+  .handler_enter = NULL,
+  .handler_error = NULL,
+  .handler_ok = NULL,
+  .data = NULL,
+  .data_length = 0,
+};
+
 state_t *parser_short_callback(input_t *i, output_t *o, state_t *s) {
+  int *counter = s->data;
+  *counter+=1;
   printf("short arg parser\n");
-  return fsm_status_ok(s);
+  return fsm_transition(s, &parser_state);
 }
 
 state_t *parser_long_callback(input_t *i, output_t *o, state_t *s) {
+  int *counter = s->data;
   printf("long arg parser\n");
-  return fsm_status_ok(s);
+  *counter+=1;
+  return fsm_transition(s, &parser_state);
 }
 
 state_t parser_short_state = {
@@ -100,7 +114,7 @@ state_t *parser_callback(input_t *i, output_t *o, state_t *s) {
   struct input *input = i->input;
   int *counter = s->data;
 
-  if (*counter >= (input->argc-1))
+  if (*counter >= (input->argc))
     return fsm_status_ok(s);
 
   size_t len = strnlen(input->argv[*counter], 256);
@@ -123,15 +137,6 @@ state_t *parser_callback(input_t *i, output_t *o, state_t *s) {
   return fsm_status_continue(s);
 }
 
-state_t parser_state =  {
-  .name = "parser",
-  .handler = parser_callback,
-  .handler_enter = NULL,
-  .handler_error = NULL,
-  .handler_ok = NULL,
-  .data = NULL,
-  .data_length = 0,
-};
 
 
 
@@ -152,6 +157,8 @@ int main(int argc, char **argv) {
   int counter = 0;
   parser_state.data = &counter;
   parser_state.data_length = sizeof(counter);
+
+  fsm_state_handler(parser_callback, &parser_state);
 
   fsm_loop(&i, NULL, &parser_state);
   return 0;

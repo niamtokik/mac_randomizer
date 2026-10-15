@@ -134,6 +134,7 @@ see previous idea. flags to use:
 Generate 10 random MAC addresses:
 
 ```console
+
 $ ./mac_randomizer -R 10
 ...
 ```
@@ -200,6 +201,44 @@ You need a compiler (`gcc` or `clang`) and `gnumake`.
 ### How to contribute?
 
 Create an issue or a PR on github.
+
+### Why re-implementation a finite state machine?
+
+The finite state machine pattern is the probably the most used method to parse
+but also to control complex protocols (e.g. many network protocols, including
+TCP, are using an FSM). This is also the main pattern used on the BEAM, the
+Erlang Virtual Machine, and by Elixir as well. One of my idea was to try to
+create something really close to the FSM model used by Erlang:
+
+* a C structure as erlang-like module containing different kind of handlers:
+
+  * default handler (equivalent to `call/3`, `cast/2` or `info/2`)
+  * init handler
+  * enter handler 
+  * ok handler 
+  * error handler
+
+* a small list of internal status for the FSM to define what to do;
+
+* a way to give to the developer an isolation between the most important part
+  of an FSM, the input (can contain any kind of data), the output (can contain
+  any kind of data, and the state (a local data field can contain any kind of
+  data);
+
+* a way to have small function callback that can be tested individually with a
+  specific crafted data, to help the creation of mocking test;
+
+* a way to debug and trace a C application on demand, and then report the 
+  state of the application;
+
+* a way to isolate concurrent thread execution based on the same principle than
+  the micro-processes spawned by Erlang.
+
+The main problem with C is to isolate all of the steps and protect also the
+potential issues (e.g. memory issues).
+
+Anyway, the code is moving fast and many examples can also be available to see
+how this FSM framework can be used.
 
 # References and Resources
 
