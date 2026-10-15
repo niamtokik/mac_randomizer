@@ -24,6 +24,10 @@ CLANG_CHECK ?= /usr/local/bin/clang-check-21
 # default source directory
 SRC_DIR = ./src
 
+# default example directory
+EXAMPLE_DIR = ./examples
+EXAMPLE_BUILD_DIR = $(BUILD_DIR)/examples
+
 # targets to build before compiling the final applications
 OBJECT_TARGETS = mac_common \
 								 mac_randomizer \
@@ -37,6 +41,9 @@ OBJECT_TARGETS = mac_common \
 TEST_TARGETS = mac_test \
 							 mac_fsm_test \
 							 mac_parser_test
+
+# examples
+EXAMPLE_TARGETS = connection
 
 # template to generate C objects
 define object_builder
@@ -60,6 +67,17 @@ $$(BUILD_DIR)/$(1)_debug: $$(OBJECTS_DEBUG)
 	cc $$(CC_FLAGS_DEBUG) $$(OBJECTS_DEBUG) $$(SRC_DIR)/$(1).c -o $$(@)
 endef
 
+# template to generate examples
+define example_builder
+EXAMPLES += $$(EXAMPLE_BUILD_DIR)/$(1)
+$$(EXAMPLE_BUILD_DIR)/$(1): $$(EXAMPLE_BUILD_DIR) $$(OBJECTS)
+	cc $$(CC_FLAGS) $$(OBJECTS) -I ./src/ $$(EXAMPLE_DIR)/$(1).c -o $$(@)
+
+EXAMPLES_DEBUG += $$(EXAMPLE_BUILD_DIR)/$(1)_debug
+$$(EXAMPLE_BUILD_DIR)/$(1)_debug: $$(EXAMPLE_BUILD_DIR) $$(OBJECTS_DEBUG)
+	cc $$(CC_FLAGS) $$(OBJECTS) -I ./src/ $$(EXAMPLE_DIR)/$(1).c -o $$(@)
+endef
+
 # TODO: improve the analyzer template
 # template to generate analyzer output files
 define analyzer_builder
@@ -77,13 +95,16 @@ endef
 ######################################################################
 .PHONY += help
 help:
-	@echo "Usage: make [all|test|debug|auto|clean]"
+	@echo "Usage: make [all|test|examples|debug|auto|clean]"
 
 ######################################################################
 # main build directory target.
 ######################################################################
 $(BUILD_DIR):
-	mkdir -p $(BUILD_DIR)
+	mkdir -p $(@)
+
+$(EXAMPLE_BUILD_DIR):
+	mkdir -p $(@)
 
 ######################################################################
 # objects targets.
@@ -96,6 +117,12 @@ $(foreach object,$(OBJECT_TARGETS), \
 ######################################################################
 $(foreach test,$(TEST_TARGETS), \
 	$(eval $(call test_builder,$(test))))
+
+######################################################################
+# example usage
+######################################################################
+$(foreach example,$(EXAMPLE_TARGETS), \
+	$(eval $(call example_builder,$(example))))
 
 ######################################################################
 # analyzer output
@@ -137,22 +164,39 @@ test: $(TESTS)
 .PHONY += debug
 debug: $(BUILD_DIR)/mac_debug
 
+.PHONY += examples
+examples: $(EXAMPLES)
+
+.PHONY += examples-debug
+examples-debug: $(EXAMPLES_DEBUG)
+
 .PHONY += test-debug
 test-debug: $(TESTS_DEBUG)
 	@for t in $(TESTS_DEBUG); do \
 		echo "[TEST] $${t}"; \
 		./$${t}; done
 
+.PHONY += clean-test
+clean-test:
+	-rm $(TESTS)
+	-rm $(TESTS_DEBUG)
+
 .PHONY += clean-debug
 clean-debug:
 	-rm $(TESTS_DEBUG)
 
+.PHONY += clean-examples
+clean-examples:
+	-rm $(EXAMPLES)
+
+.PHONY += clean-examples-debug
+clean-examples-debug:
+	-rm $(EXAMPLES_DEBUG)
+
 .PHONY += clean
-clean: clean-debug
+clean: clean-test clean-debug clean-examples clean-examples-debug
 	-rm $(OBJECTS)
 	-rm $(BUILD_DIR)/mac
-	-rm $(TESTS)
-	-rm $(TESTS_DEBUG)
 	-rm $(ANALYSIS_FILES)
 
 .PHONY: $(.PHONY)
