@@ -43,7 +43,9 @@ TEST_TARGETS = mac_test \
 							 mac_parser_test
 
 # examples
-EXAMPLE_TARGETS = connection
+EXAMPLE_TARGETS = fsm_arguments_parser \
+								 	fsm_connection \
+									fsm_malloc	
 
 # template to generate C objects
 define object_builder
