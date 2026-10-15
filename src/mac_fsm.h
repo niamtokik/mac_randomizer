@@ -39,6 +39,7 @@ enum fsm_status {
   CONTINUE,
   EVAL_ERROR,
   UNKNOWN,
+  TRANSITION,
 };
 
 // TODO:
@@ -108,25 +109,22 @@ int fsm_output_init(output_t *);
 int fsm_state_init(state_t *);
 int fsm_init(input_t *, output_t *, state_t *);
 
-// setters
-// // setter for input_t data-structure
-// int fsm_input(void *, size_t, input_t);
-//
-// // setter for the output_t data-structure
-// int fsm_output(void *, size_t, output_t);
-//
-// // setter for the data part of the fsm
-// int fsm_state_data(void *, size_t , struct_t *);
+// state handler management
 state_t *fsm_state_handler(state_t *(*handler)(input_t *, output_t *, state_t *), state_t *);
 state_t *fsm_state_handler_enter(void (*handler_error)(output_t *, state_t *), state_t *);
 state_t *fsm_state_handler_error(enum fsm_status (*handler_error)(input_t *, output_t *, state_t *), state_t *);
 state_t *fsm_state_handler_ok(void (*handle_ok)(input_t *, output_t *, state_t *), state_t *);
 
-// state management
+// status management
 state_t *fsm_status_ok(state_t *);
 state_t *fsm_status_continue(state_t *);
 state_t *fsm_status_error(char *, state_t *);
+state_t *fsm_status_eval_error(char *, state_t *);
 state_t *fsm_status_unknown(state_t *);
+
+// data state management
+int fsm_set_state_data(void *, size_t, state_t *);
+void fsm_state_data_copy(state_t *src, state_t *dst);
 
 // input, output and state getters/setters
 void *fsm_get_input(input_t *);
@@ -135,6 +133,8 @@ void * fsm_get_output(output_t *);
 int fsm_set_output(void *, size_t, output_t *);
 void *get_state_data(state_t *);
 int fsm_set_state_data(void *, size_t, state_t *);
+
+// fsm state transition
 state_t *fsm_transition(state_t *, state_t *);
 
 // fsm main functions

@@ -35,6 +35,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <fcntl.h>
+#include <string.h>
 #include "minunit.h"
 #include "mac.h"
 #include "mac_test_helper.h"
@@ -99,22 +100,23 @@ state_t state_a;
 state_t state_b;
 state_t state_c;
 
+void callback_enter(output_t *o, state_t *s) {
+  _debug("enter: name=%s, previous=%s\n", s->name, s->previous_state->name);
+  mu_assert(s->name != NULL, "name must be set");
+}
+
 state_t *callback_a(input_t *i, output_t *o, state_t *s) {
-  printf("state_a %s\n", s->name);
-  state_t *ss = fsm_transition(s, &state_b);
-  printf("%s\n", ss->name);
-  printf("%p\n", s->handler);
-  printf("%p\n", ss->handler);
-  return fsm_status_ok(ss);
+  _debug("state_a: name=%s\n", s->name);
+  return fsm_transition(s, &state_b);
 }
 
 state_t *callback_b(input_t *i, output_t *o, state_t *s) {
-  printf("state_b\n");
+  _debug("state_b: name=%s\n", s->name);
   return fsm_transition(s, &state_c);
 }
 
 state_t *callback_c(input_t *i, output_t *o, state_t *s) {
-  printf("state_c\n");
+  _debug("state_c: name=%s\n", s->name);
   return fsm_status_ok(s);
 }
 
@@ -131,12 +133,15 @@ MU_TEST(test_fsm_transitions) {
 
   state_a.name = "state_a";
   state_a.handler = callback_a;
+  state_a.handler_enter = callback_enter;
 
   state_b.name = "state_b";
   state_b.handler = callback_b;
+  state_b.handler_enter = callback_enter;
 
   state_c.name = "state_c";
   state_c.handler = callback_c;
+  state_c.handler_enter = callback_enter;
 
   int ret = fsm_loop(&si, &so, &state_a);
   mu_assert(ret == 0, "ret error");

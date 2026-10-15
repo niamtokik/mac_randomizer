@@ -42,6 +42,8 @@
  * the next/previous state could be generated to find eventual
  * bugs or optimize the fsm.
  *
+ * TODO: create a step by step transition.
+ *
  * TODO: add in the documentation.
  *
  * TODO: add debug flag and debug functions(s).
@@ -160,6 +162,13 @@ fsm_status_unknown(state_t *s) {
   return s;
 }
 
+state_t *
+fsm_status_eval_error(char *message, state_t *s) {
+  s->status = EVAL_ERROR;
+  s->message = message;
+  return s;
+}
+
 /**
  * set state's handler, this is the function executed
  * by the fsm.
@@ -265,19 +274,25 @@ fsm_set_state_data(void *data, size_t data_length, state_t *s) {
 }
 
 /**
+ *
+ */
+void
+fsm_state_data_copy(state_t *src, state_t *dst) {
+  if (src->data_length > 0) {
+    dst->data_length = src->data_length;
+    memcpy(dst->data, src->data, src->data_length);
+  }
+}
+
+/**
  * A function to do the transition between 2 states by copying
  * the input, out and state data structure.
  */
 state_t *
 fsm_transition(state_t *src, state_t *dst) {
-  memcpy(dst->data, src->data, src->data_length);
-  // dst->handler = src->handler;
-  // dst->handler_enter = src->handler_enter;
-  // dst->handler_error = src->handler_error;
-  // dst->handler_ok = src->handler_ok;
-  // dst->status = src->status;
+  fsm_state_data_copy(src, dst);
   dst->previous_state = src;
-  dst->status = CONTINUE;
+  dst->status = TRANSITION;
   return dst;
 }
 
@@ -294,71 +309,61 @@ fsm_check(input_t *i, output_t *o, state_t *s) {
 
 // function to execute the computation, in charge to manage
 // the returned result/status of the fsm.
-enum fsm_status
+state_t *
 fsm_eval(state_t *(callback)(input_t *, output_t *o, state_t*), input_t *i, output_t *o, state_t *s) {
     // check if the struct to be used is valid.
-    if (fsm_check(i, o, s) <0) return EVAL_ERROR; 
+    if (fsm_check(i, o, s) <0)
+      return fsm_status_eval_error("invalid state", s); 
 
-    // execute the handler present in the state_t data structure,
-    // it should return a valid struct.
+    // if we are still in transition, it means we switched
+    // from another state.
+    if (s->status == TRANSITION) {
+      if (s->handler_enter != NULL)
+        (void)s->handler_enter(o, s);
+    }
+
+    // if the callback is NULL (is should not be the case), an
+    // error must be returned.
+    if (callback == NULL)
+      fsm_status_eval_error("invalid callback", s);
+
+    // let execute the callback and store its result in a temporary
+    // state_t variable.
     fsm_status_unknown(s);
     state_t *ret_state;
-    if (callback) ret_state = callback(i, o, s);
-    if (fsm_check(i, o, s) <0) return EVAL_ERROR; 
+    ret_state = callback(i, o, s);
 
-    // if the returned struct is different than the one we
-    // currently use, it means this is a state transition. In this
-    // case, if the handler_enter callback function is defined,
-    // the status of the structure must be set to ENTER and then
-    // the handler_enter callback must be called. The ENTER status
-    // MUST NOT alter the state_t data structure.
-    if (ret_state != s && ret_state->handler_enter != NULL)
-      (void)ret_state->handler_enter(o, s);
+    // the result must be check to see if everything is right.
+    if (fsm_check(i, o, ret_state) <0)
+      return fsm_status_eval_error("invalid state", ret_state); 
 
-    // when a full transition happens, the previous state address
-    // is stored there.
-    if (ret_state != s)
-      ret_state->previous_state = s;
-
-    // if the state returned is unknown, it means the user never
-    // set a valid state after the computation, it should be
-    // treated as an error (unkonwn state).
-    if (ret_state->status == UNKNOWN)
-      return UNKNOWN;
+    // an unauthorized transition happened.
+    if (ret_state->status != TRANSITION && ret_state != s)
+      return fsm_status_eval_error("invalid transition", ret_state); 
 
     // the user state the finite state machine to error, it
     // means something bad happened, and the fsm must be
     // stopped
-    if (ret_state->status == ERROR && ret_state->handler_error != NULL)
-      return ret_state->handler_error(i, o, s);
-
-    // if no error callback functions is defined, simply return the error
-    if (ret_state->status == ERROR)
-      return ERROR;
+    if (ret_state->status == ERROR && ret_state->handler_error != NULL) {
+      char * msg = ret_state->message;
+      (void)ret_state->handler_error(i, o, ret_state);
+      // force the return because the error callback can alter the 
+      // status, but because its an error, we must return the value.
+      return fsm_status_error(msg, ret_state);
+    }
 
     // if handler_ok function callback is defined, then it is executed
     // before returning everything was good.
-    if (ret_state->status == OK && ret_state->handler_ok != NULL)
-      ret_state->handler_ok(i, o, s);
-
-    // the user set the finite state machine to ok, it
-    // means the state machine finished the computation,
-    // and the final data should be present in the
-    // output.
-    if (ret_state->status == OK)
-      return OK;
-
-    // the user set the finite state machine to continue,
-    // it means the computation is not done yet, and
-    // the callback function will be called again.
-    if (ret_state->status == CONTINUE) {
-      s = ret_state;
-      return CONTINUE;
+    if (ret_state->status == OK && ret_state->handler_ok != NULL) {
+      (void)ret_state->handler_ok(i, o, ret_state);
+      // force to return an OK status, to stop the execution of the
+      // loop in case the handler_ok alter the status.
+      return fsm_status_ok(ret_state);;
     }
 
-    // if the loop stop for no reason, return unknow status
-    // it should never happen.
-    return UNKNOWN;
+    // by default we return the returned state, the loop will be
+    // in charge to stop the computation or not.
+    return ret_state;
 }
 
 /**
@@ -370,17 +375,13 @@ fsm_eval(state_t *(callback)(input_t *, output_t *o, state_t*), input_t *i, outp
 int
 fsm_loop(input_t *i, output_t *o, state_t *s) {
   for (;;) {
-
     // evaluate the computation and check its result, this where
     // the routing happens.
-    //
-    // TODO: DRY. This should be executed in another function to be reused
-    // in other part of the application.
-    switch (fsm_eval(s->handler, i, o, s)) {
-      case EVAL_ERROR: return -1;
-      case ERROR: return -1;
+    s = fsm_eval(s->handler, i, o, s);
+    switch (s->status) {
       case OK: return 0;
       case CONTINUE: continue;
+      case TRANSITION: continue;
       default: return -1;
     }
   }
@@ -399,10 +400,8 @@ fsm_start(state_t *(*init_callback)(input_t *, output_t *, state_t *), input_t *
 
   // if an init callback function is given, then it must be executed
   if (init_callback != NULL) {
-    // TODO: DRY.
-    switch (fsm_eval(init_callback, i, o, s)) {
-      case EVAL_ERROR: return -1;
-      case ERROR: return -1;
+    state_t *init_ret = fsm_eval(init_callback, i, o, s);
+    switch (init_ret->status) {
       case OK: return 0;
       case CONTINUE: break;
       default: return -1;
