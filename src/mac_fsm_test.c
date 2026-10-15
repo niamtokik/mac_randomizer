@@ -238,7 +238,7 @@ state_t *fd_handler(input_t *i, output_t *o, state_t *s) {
   return fsm_status_ok(s);
 }
 
-enum fsm_status fd_handler_error(input_t *i, output_t *o, state_t *s) {
+fsm_status fd_handler_error(input_t *i, output_t *o, state_t *s) {
   struct input_fd *ifd = i->input;
   close(ifd->fd);
   return ERROR;

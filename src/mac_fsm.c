@@ -195,7 +195,7 @@ fsm_state_handler_enter(void (*handler_enter)(output_t *, state_t *), state_t *s
  * 
  */
 state_t *
-fsm_state_handler_error(enum fsm_status (*handler_error)(input_t *, output_t *, state_t *), state_t *s) {
+fsm_state_handler_error(fsm_status (*handler_error)(input_t *, output_t *, state_t *), state_t *s) {
   s->handler_error = handler_error;
   return s;
 }
@@ -274,7 +274,9 @@ fsm_set_state_data(void *data, size_t data_length, state_t *s) {
 }
 
 /**
- *
+ * copy data from state_t structure to the new 
+ * structure, overwriting the old data if present, using
+ * the data_length.
  */
 void
 fsm_state_data_copy(state_t *src, state_t *dst) {
@@ -286,7 +288,9 @@ fsm_state_data_copy(state_t *src, state_t *dst) {
 
 /**
  * A function to do the transition between 2 states by copying
- * the input, out and state data structure.
+ * the input, out and state data structure. During a transition
+ * the data from the old state is copied into the new state,
+ * overwriting it if already present.
  */
 state_t *
 fsm_transition(state_t *src, state_t *dst) {
@@ -366,15 +370,9 @@ fsm_eval(state_t *(callback)(input_t *, output_t *o, state_t*), input_t *i, outp
     return ret_state;
 }
 
-/**
- * fsm main loop, it will give the input, output and state
- * to the handler definined in the state data structure. The
- * status is then checked to define if the computation is done
- * or not.
- */
 int
-fsm_loop(input_t *i, output_t *o, state_t *s) {
-  for (;;) {
+__fsm_loop(input_t *i, output_t *o, state_t *s, __fsm_state *fs) {
+  for (;;fs->counter++) {
     // evaluate the computation and check its result, this where
     // the routing happens.
     s = fsm_eval(s->handler, i, o, s);
@@ -386,6 +384,22 @@ fsm_loop(input_t *i, output_t *o, state_t *s) {
     }
   }
   return -1;
+}
+
+/**
+ * fsm main loop, it will give the input, output and state
+ * to the handler definined in the state data structure. The
+ * status is then checked to define if the computation is done
+ * or not.
+ */
+int
+fsm_loop(input_t *i, output_t *o, state_t *s) {
+  // create the internal structure for the main loop
+  __fsm_state fs;
+  bzero(&fs, sizeof(__fsm_state));
+
+  // start the loop
+  return __fsm_loop(i, o, s, &fs);
 }
 
 /**

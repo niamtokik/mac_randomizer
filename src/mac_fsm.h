@@ -33,14 +33,14 @@
  */
 
 // supported FSM state's statuses.
-enum fsm_status {
-  ERROR,
+typedef enum {
+  ERROR = 0,
   OK,
   CONTINUE,
   EVAL_ERROR,
   UNKNOWN,
   TRANSITION,
-};
+} fsm_status;
 
 // TODO:
 // Using data instead of enum for the status can probably
@@ -78,7 +78,7 @@ typedef struct __state {
   char *name;
 
   // fsm status, defining what to do at the end of every computations.
-  enum fsm_status status;
+  fsm_status status;
 
   // fsm message, used when something goes wrong during computation.
   char *message;
@@ -90,7 +90,7 @@ typedef struct __state {
   void (*handler_enter)(output_t *, struct __state *);
 
   // callback function called when the fsm return an error
-  enum fsm_status (*handler_error)(input_t *, output_t *, struct __state *);
+  fsm_status (*handler_error)(input_t *, output_t *, struct __state *);
 
   // teardown callback function.
   void (*handler_ok)(input_t *, output_t *, struct __state *);
@@ -112,7 +112,7 @@ int fsm_init(input_t *, output_t *, state_t *);
 // state handler management
 state_t *fsm_state_handler(state_t *(*handler)(input_t *, output_t *, state_t *), state_t *);
 state_t *fsm_state_handler_enter(void (*handler_error)(output_t *, state_t *), state_t *);
-state_t *fsm_state_handler_error(enum fsm_status (*handler_error)(input_t *, output_t *, state_t *), state_t *);
+state_t *fsm_state_handler_error(fsm_status (*handler_error)(input_t *, output_t *, state_t *), state_t *);
 state_t *fsm_state_handler_ok(void (*handle_ok)(input_t *, output_t *, state_t *), state_t *);
 
 // status management
@@ -142,3 +142,14 @@ int fsm_init(input_t *, output_t *, state_t *);
 int fsm_check(input_t *, output_t *, state_t *);
 int fsm_start(state_t *(*init_callback)(input_t *, output_t *, state_t *), input_t *, output_t *, state_t *);
 int fsm_loop(input_t *, output_t *, state_t *);
+
+// internal fsm state data-structure used for
+// debugging and tracing purpose
+typedef struct __fsm_state {
+  uint32_t counter;
+  // uint32_t transition_counter;
+  // uint32_t continue_counter;
+  // uint64_t average_computation_time;
+  // uint64_t started_at;
+  // uint64_t stopped_at;
+} __fsm_state;
