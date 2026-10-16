@@ -46,7 +46,7 @@ struct parameter {
   void *value;
 };
 
-struct parameter parameters[] = {
+struct parameter parameters[2] = {
   {
     .name = "all",
     .short_arg = 'a',
@@ -66,15 +66,9 @@ struct input {
   char **argv;
 };
 
-state_t parser_state =  {
-  .name = "parser",
-  .handler = NULL,
-  .handler_enter = NULL,
-  .handler_error = NULL,
-  .handler_ok = NULL,
-  .data = NULL,
-  .data_length = 0,
-};
+state_t parser_state;
+state_t parser_short_state;
+state_t parser_long_state;
 
 state_t *parser_short_callback(input_t *i, output_t *o, state_t *s) {
   int *counter = s->data;
@@ -89,26 +83,6 @@ state_t *parser_long_callback(input_t *i, output_t *o, state_t *s) {
   *counter+=1;
   return fsm_transition(s, &parser_state);
 }
-
-state_t parser_short_state = {
-  .name = "parser_short",
-  .handler = parser_short_callback,
-  .handler_enter = NULL,
-  .handler_error = NULL,
-  .handler_ok = NULL,
-  .data = NULL,
-  .data_length = 0,
-};
-
-state_t parser_long_state = {
-  .name = "parser_long",
-  .handler = parser_long_callback,
-  .handler_enter = NULL,
-  .handler_error = NULL,
-  .handler_ok = NULL,
-  .data = NULL,
-  .data_length = 0,
-};
 
 state_t *parser_callback(input_t *i, output_t *o, state_t *s) {
   struct input *input = i->input;
@@ -137,11 +111,36 @@ state_t *parser_callback(input_t *i, output_t *o, state_t *s) {
   return fsm_status_continue(s);
 }
 
+void
+parameter_list(struct parameter *parameters) {
+  for (int i=0; i<2; i++)
+    printf("%s: short:%c long:%s\n",
+        parameters[i].name,
+        parameters[i].short_arg,
+        parameters[i].long_arg
+    );
+}
 
+struct parameter *
+parameter_search_short(struct parameter *parameters, char c) {
+  for (int i=0; i<2; i++)
+    if (parameters[i].short_arg == c)
+      return &parameters[i];
+  return NULL;
+}
 
+void init_states() {
+  fsm_state_init(&parser_state);
+  parser_state.name = "parser";
+  parser_state.handler = parser_callback;
 
-int parameter_search_short(char c, struct parameter **parameters, struct parameter *param) {
-  return 0;
+  fsm_state_init(&parser_long_state);
+  parser_long_state.name = "parser_long_state";
+  parser_long_state.handler = parser_long_callback;
+
+  fsm_state_init(&parser_short_state);
+  parser_short_state.name = "parser_short_state";
+  parser_short_state.handler = parser_short_callback;
 }
 
 int main(int argc, char **argv) {
@@ -154,6 +153,8 @@ int main(int argc, char **argv) {
   i.input = &input;
   i.input_length = sizeof(struct input);
 
+  init_states();
+
   int counter = 0;
   parser_state.data = &counter;
   parser_state.data_length = sizeof(counter);
@@ -161,5 +162,10 @@ int main(int argc, char **argv) {
   fsm_state_handler(parser_callback, &parser_state);
 
   fsm_loop(&i, NULL, &parser_state);
+
+  parameter_list(parameters);
+  struct parameter *p = parameter_search_short(parameters, 'a');
+  printf("search: %s\n", p->name);
+
   return 0;
 }
