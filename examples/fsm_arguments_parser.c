@@ -38,6 +38,7 @@
 #define PARAM_TYPE_INTEGER 0x01
 #define PARAM_TYPE_STRING 0x02
 
+
 struct parameter {
   char *name;
   char short_arg;
@@ -45,6 +46,9 @@ struct parameter {
   uint8_t type;
   void *value;
 };
+
+int parameter_search_short(struct parameter *, char, struct parameter **);
+int parameter_search_long(struct parameter *, char *, struct parameter **);
 
 struct parameter parameters[2] = {
   {
@@ -72,8 +76,8 @@ state_t parser_long_state;
 
 state_t *parser_short_callback(input_t *i, output_t *o, state_t *s) {
   int *counter = s->data;
-  *counter+=1;
   printf("short arg parser\n");
+  *counter+=1;
   return fsm_transition(s, &parser_state);
 }
 
@@ -121,12 +125,27 @@ parameter_list(struct parameter *parameters) {
     );
 }
 
-struct parameter *
-parameter_search_short(struct parameter *parameters, char c) {
-  for (int i=0; i<2; i++)
-    if (parameters[i].short_arg == c)
-      return &parameters[i];
-  return NULL;
+int
+parameter_search_short(struct parameter *ps, char c, struct parameter **dest) {
+  for (int i=0; i<2; i++) {
+    if (ps[i].short_arg == c) {
+      *dest = &ps[i];
+      return 1;
+    }
+  }
+  return 0;
+}
+
+int parameter_search_long(struct parameter *ps, char *long_arg, struct parameter **dest) {
+  for (int i=0; i<2; i++) {
+    size_t len_store = strlen(ps[i].long_arg);
+    int ret = strncmp(ps[i].long_arg, long_arg, len_store);
+    if (ret == 0) {
+      *dest = &ps[i];
+      return 1;
+    }
+  }
+  return 0;
 }
 
 void init_states() {
@@ -162,10 +181,5 @@ int main(int argc, char **argv) {
   fsm_state_handler(parser_callback, &parser_state);
 
   fsm_loop(&i, NULL, &parser_state);
-
-  parameter_list(parameters);
-  struct parameter *p = parameter_search_short(parameters, 'a');
-  printf("search: %s\n", p->name);
-
   return 0;
 }
